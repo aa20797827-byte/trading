@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>패턴 분석 — Trading Desk</title>
+  <style>
+    :root{
+      --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;
+      --text:#e6edf3;--muted:#8b949e;
+      --green:#3fb950;--red:#f85149;--yellow:#d29922;--blue:#58a6ff;--purple:#bc8cff;--orange:#ffa657;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh;}
+
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+    .logo{font-size:17px;font-weight:700;color:var(--purple);}
+    .back-btn{display:flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);transition:all .15s;}
+    .back-btn:hover{color:var(--blue);border-color:var(--blue);}
+
+    .main{padding:24px;max-width:1280px;margin:0 auto;}
+
+    /* 빈 상태 */
+    .no-data{text-align:center;padding:80px 20px;color:var(--muted);}
+    .no-data .icon{font-size:56px;margin-bottom:16px;}
+    .no-data h2{font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;}
+    .no-data p{font-size:13px;line-height:1.7;}
+
+    /* 섹션 */
+    .sec{margin-bottom:32px;}
+    .sec-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .sec-sub{font-size:12px;color:var(--muted);font-weight:400;margin-left:4px;}
+
+    /* 요약 카드 그리드 */
+    .summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:32px;}
+    .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+    .sum-label{font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+    .sum-val{font-size:24px;font-weight:800;}
+    .sum-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+    .c-green{color:var(--green);} .c-red{color:var(--red);} .c-blue{color:var(--blue);}
+    .c-yellow{color:var(--yellow);} .c-purple{color:var(--purple);} .c-muted{color:var(--muted);}
+
+    /* 2컬럼 레이아웃 */
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px;}
+
+    /* 패턴 카드 */
+    .pattern-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
+    .pattern-box-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+
+    /* 키워드 랭킹 */
+    .kw-list{display:flex;flex-direction:column;gap:8px;}
+    .kw-item{background:var(--surface2);border-radius:8px;padding:10px 14px;}
+    .kw-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+    .kw-name{font-size:14px;font-weight:700;cursor:pointer;}
+    .kw-name:hover{color:var(--blue);}
+    .kw-badges{display:flex;gap:6px;align-items:center;}
+    .kw-cnt{font-size:11px;color:var(--muted);}
+    .kw-wr{font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;}
+    .wr-high{background:rgba(63,185,80,.15);color:var(--green);}
+    .wr-mid {background:rgba(210,153,34,.15);color:var(--yellow);}
+    .wr-low {background:rgba(248,81,73,.15);color:var(--red);}
+    .kw-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+    .kw-bar{height:100%;border-radius:3px;transition:width .4s ease;}
+    .kw-detail{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px;}
+
+    /* 전체 키워드 테이블 */
+    .kw-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .kw-table th{text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+    .kw-table td{padding:10px 12px;border-bottom:1px solid rgba(48,54,61,.5);vertical-align:middle;}
+    .kw-table tr:hover td{background:var(--surface2);}
+    .kw-table tr:last-child td{border-bottom:none;}
+    .bar-cell{width:120px;}
+    .mini-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+    .mini-bar{height:100%;border-radius:3px;}
+
+    /* 방향 분석 */
+    .dir-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .dir-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;}
+    .dir-title{font-size:13px;font-weight:700;margin-bottom:12px;}
+    .dir-wr{font-size:36px;font-weight:800;margin-bottom:4px;}
+    .dir-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;}
+    .dir-stat{background:var(--surface2);border-radius:6px;padding:8px;}
+    .dir-sl{font-size:10px;color:var(--muted);margin-bottom:3px;}
+    .dir-sv{font-size:14px;font-weight:700;}
+
+    /* 월별 성과 */
+    .monthly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+    .month-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+    .month-label{font-size:11px;color:var(--muted);margin-bottom:6px;}
+    .month-pnl{font-size:15px;font-weight:700;}
+    .month-cnt{font-size:11px;color:var(--muted);margin-top:3px;}
+
+    /* 매매 목록 모달 */
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
+    .modal-bg.open{display:flex;}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:640px;max-width:95vw;max-height:85vh;overflow-y:auto;}
+    .modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+    .modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;}
+    .trade-item{background:var(--surface2);border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:3px solid transparent;}
+    .trade-item.win{border-left-color:var(--green);}
+    .trade-item.lose{border-left-color:var(--red);}
+    .trade-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+    .trade-ticker{font-size:15px;font-weight:800;color:var(--blue);}
+    .trade-memo{font-size:12px;color:var(--muted);line-height:1.6;}
+    .highlight{background:rgba(210,153,34,.25);color:var(--yellow);padding:0 2px;border-radius:3px;font-weight:600;}
+
+    /* 태그 클라우드 */
+    .tag-cloud{display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;}
+    .cloud-tag{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;border:1px solid transparent;}
+    .cloud-tag:hover{transform:scale(1.05);}
+
+    /* 인사이트 박스 */
+    .insight-list{display:flex;flex-direction:column;gap:10px;}
+    .insight-item{background:var(--surface2);border-radius:8px;padding:12px 16px;border-left:3px solid var(--blue);display:flex;gap:12px;align-items:flex-start;}
+    .insight-icon{font-size:20px;flex-shrink:0;}
+    .insight-text{font-size:13px;color:var(--text);line-height:1.65;}
+    .insight-text strong{color:var(--blue);}
+    .insight-item.warn{border-left-color:var(--red);}
+    .insight-item.warn .insight-text strong{color:var(--red);}
+    .insight-item.ok{border-left-color:var(--green);}
+    .insight-item.ok .insight-text strong{color:var(--green);}
+
+    @media(max-width:768px){
+      .summary-grid{grid-template-columns:repeat(3,1fr);}
+      .two-col{grid-template-columns:1fr;}
+      .dir-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧠 패턴 분석</div>
+  <a href="index.html" class="back-btn">← 대시보드로</a>
+</header>
+<script>
+  if(TD_ACTIVE){
+    const c=TD_COLORS[TD_ACTIVE]||'#4f9eff';
+    document.querySelector('.logo').insertAdjacentHTML('beforeend',
+      `&nbsp;<span style="display:inline-flex;align-items:center;gap:8px;border-left:3px solid ${c};padding-left:10px;margin-left:6px;">` +
+      `<span style="font-size:18px;font-weight:900;color:${c};text-shadow:0 0 12px ${c}88;">${TD_ACTIVE}</span>` +
+      `<button onclick="switchUser()" style="background:${c}22;border:1px solid ${c}66;color:${c};border-radius:7px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.2px;" onmouseover="this.style.background='${c}44'" onmouseout="this.style.background='${c}22'">👤 사용자 전환</button>` +
+      `</span>`
+    );
+  }
+</script>
+
+<div class="main" id="mainContent">
+  <div style="text-align:center;padding:60px;color:var(--muted)">
+    <div style="font-size:32px;margin-bottom:12px">⏳</div>분석 중...
+  </div>
+</div>
+
+<!-- 매매 목록 모달 -->
+<div class="modal-bg" id="tradeModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modalKw"></span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalList"></div>
+  </div>
+</div>
+
+<script>
+  // ── 데이터 로드 ──
+  // ── 유저 확인 ──
+  const TD_ACTIVE = localStorage.getItem('td_active_user')||'';
+  const TD_COLORS = {'지훈':'#4f9eff','성준':'#2ecc71','도영':'#a855f7','기성':'#f39c12'};
+  const gk = k => TD_ACTIVE ? `td_${TD_ACTIVE}_${k}` : `td_default_${k}`;
+  function switchUser(){ localStorage.removeItem('td_active_user'); location.href='index.html'; }
+  if(!TD_ACTIVE){ location.href='index.html'; }
+
+  const scenarios = JSON.parse(localStorage.getItem(gk('scenarios'))||'[]');
+  const closed = scenarios.filter(s => s.status==='closed' && s.closeType);
+
+  // ── 유틸 ──
+  const fmt$ = v => (v>=0?'+':'')+`$${Math.abs(v).toFixed(2)}`;
+  const fmtPct = v => (v>=0?'+':'')+`${v.toFixed(1)}%`;
+  const cls = v => v>0?'c-green':v<0?'c-red':'c-muted';
+  function calcPnL(s){
+    if(!s.entry||!s.closePrice) return null;
+    const qty=parseFloat(s.qty)||1;
+    return s.direction==='long'
+      ?(parseFloat(s.closePrice)-parseFloat(s.entry))*qty
+      :(parseFloat(s.entry)-parseFloat(s.closePrice))*qty;
+  }
+  function calcPct(s){
+    if(!s.entry||!s.closePrice) return null;
+    return s.direction==='long'
+      ?(parseFloat(s.closePrice)-parseFloat(s.entry))/parseFloat(s.entry)*100
+      :(parseFloat(s.entry)-parseFloat(s.closePrice))/parseFloat(s.entry)*100;
+  }
+
+  // ── 한국어/영어 불용어 ──
+  const STOP = new Set([
+    '이','가','을','를','은','는','에','서','로','으로','의','와','과','도','만','에서',
+    '위해','통해','인해','후에','전에','때','중','후','전','시','이후','이전','기반',
+    '확인','예상','시나리오','진입','매수','매도','포지션','가격','현재','토대로',
+    '것','있어','있는','하는','하고','됩니다','입니다','합니다','으로','에서','라고',
+    '경우','수준','정도','종목','구간','반등','주봉','일봉','차트','보임','추세','해당',
+    'a','an','the','is','are','was','were','be','been','have','has','had','do','does',
+    'did','will','would','could','should','may','might','can','at','in','on','of',
+    'to','for','with','by','from','up','out','as','into','if','but','or','and','not',
+  ]);
+
+  // ── 키워드 추출 ──
+  function extractKeywords(text){
+    if(!text) return [];
+    return text
+      .split(/[\s,\.!?\[\]()/\\:;\-_]+/)
+      .map(w=>w.replace(/[^가-힣a-zA-Z0-9%]/g,''))
+      .filter(w=>w.length>=2 && !STOP.has(w.toLowerCase()))
+      .map(w=>w.toUpperCase());
+  }
+
+  // ── 키워드 → 매매 매핑 ──
+  function buildKeywordMap(){
+    const map = {}; // kw → {trades:[],wins:0,losses:0,totalPnl:0}
+    closed.forEach(s=>{
+      const pnl = calcPnL(s);
+      const text = [s.memo||'', s.analysis||'', s.tags||''].join(' ');
+      const kws = [...new Set(extractKeywords(text))];
+      kws.forEach(kw=>{
+        if(!map[kw]) map[kw]={kw,trades:[],wins:0,losses:0,totalPnl:0,pnlList:[]};
+        map[kw].trades.push(s);
+        if(s.closeType==='익절') map[kw].wins++;
+        else map[kw].losses++;
+        if(pnl!=null){ map[kw].totalPnl+=pnl; map[kw].pnlList.push(pnl); }
+      });
+    });
+    return Object.values(map)
+      .filter(m=>m.trades.length>=1)
+      .map(m=>({
+        ...m,
+        cnt: m.trades.length,
+        wr: m.trades.length? (m.wins/m.trades.length)*100 : 0,
+        avgPnl: m.pnlList.length? m.totalPnl/m.pnlList.length : 0,
+      }))
+      .sort((a,b)=>b.cnt-a.cnt);
+  }
+
+  // ── 월별 성과 ──
+  function buildMonthlyData(){
+    const map={};
+    closed.forEach(s=>{
+      const d=s.closeDate||s.date;
+      const m=d?d.slice(0,7):'?';
+      if(!map[m]) map[m]={month:m,pnl:0,cnt:0,wins:0};
+      const p=calcPnL(s)||0;
+      map[m].pnl+=p; map[m].cnt++; if(s.closeType==='익절') map[m].wins++;
+    });
+    return Object.values(map).sort((a,b)=>a.month>b.month?1:-1);
+  }
+
+  // ── AI 인사이트 생성 ──
+  function buildInsights(kwMap, longData, shortData){
+    const insights=[];
+    const total=closed.length;
+    if(!total) return insights;
+
+    const overallWr=(closed.filter(s=>s.closeType==='익절').length/total)*100;
+    const totalPnl=closed.reduce((a,s)=>{const p=calcPnL(s);return a+(p||0);},0);
+
+    // 전체 승률
+    if(overallWr>=60) insights.push({type:'ok',icon:'🏆',text:`전체 승률 <strong>${overallWr.toFixed(1)}%</strong>로 우수한 성적이에요. 지금의 매매 원칙을 유지하세요.`});
+    else if(overallWr<=40) insights.push({type:'warn',icon:'⚠️',text:`전체 승률 <strong>${overallWr.toFixed(1)}%</strong>로 손실 패턴이 많아요. 아래 손실 패턴을 집중적으로 분석해보세요.`});
+
+    // 최고 승률 키워드
+    const topWinKw=kwMap.filter(k=>k.cnt>=2).sort((a,b)=>b.wr-a.wr)[0];
+    if(topWinKw) insights.push({type:'ok',icon:'✅',text:`<strong>"${topWinKw.kw}"</strong> 근거가 포함된 매매는 승률 <strong>${topWinKw.wr.toFixed(0)}%</strong> (${topWinKw.wins}승 ${topWinKw.losses}패)로 가장 효과적이에요.`});
+
+    // 최저 승률 키워드
+    const topLoseKw=kwMap.filter(k=>k.cnt>=2).sort((a,b)=>a.wr-b.wr)[0];
+    if(topLoseKw&&topLoseKw.wr<40) insights.push({type:'warn',icon:'🛑',text:`<strong>"${topLoseKw.kw}"</strong> 근거가 포함된 매매는 승률 <strong>${topLoseKw.wr.toFixed(0)}%</strong> (${topLoseKw.wins}승 ${topLoseKw.losses}패)로 주의가 필요해요.`});
+
+    // LONG vs SHORT
+    if(longData.cnt>0&&shortData.cnt>0){
+      const better=longData.wr>=shortData.wr?'LONG':'SHORT';
+      const betterWr=Math.max(longData.wr,shortData.wr);
+      insights.push({type:'info',icon:'📊',text:`<strong>${better}</strong> 방향 매매 승률(${betterWr.toFixed(0)}%)이 더 높아요. 방향성에 맞춘 전략 집중을 고려해보세요.`});
+    }
+
+    // 기대값
+    const tpTrades=closed.filter(s=>s.closeType==='익절');
+    const slTrades=closed.filter(s=>s.closeType==='손절');
+    if(tpTrades.length&&slTrades.length){
+      const avgWin=tpTrades.reduce((a,s)=>a+(calcPnL(s)||0),0)/tpTrades.length;
+      const avgLoss=slTrades.reduce((a,s)=>a+(calcPnL(s)||0),0)/slTrades.length;
+      const rrRatio=Math.abs(avgWin/avgLoss);
+      if(rrRatio>1.5) insights.push({type:'ok',icon:'⚖️',text:`평균 익절금($${avgWin.toFixed(0)})이 평균 손절금($${Math.abs(avgLoss).toFixed(0)})보다 <strong>${rrRatio.toFixed(1)}배</strong> 높아요. 좋은 리스크 관리예요.`});
+      else if(rrRatio<1) insights.push({type:'warn',icon:'⚖️',text:`평균 손절금이 익절금보다 커요. 목표가를 더 멀리 설정하거나 손절을 빠르게 가져가는 전략을 고려해보세요.`});
+    }
+
+    return insights;
+  }
+
+  // ── 방향별 통계 ──
+  function calcDirData(direction){
+    const trades=closed.filter(s=>s.direction===direction);
+    const wins=trades.filter(s=>s.closeType==='익절');
+    const losses=trades.filter(s=>s.closeType==='손절');
+    const totalPnl=trades.reduce((a,s)=>a+(calcPnL(s)||0),0);
+    const avgPnl=trades.length?totalPnl/trades.length:0;
+    const wr=trades.length?(wins.length/trades.length)*100:0;
+    return{cnt:trades.length,wins:wins.length,losses:losses.length,wr,totalPnl,avgPnl};
+  }
+
+  // ── 메인 렌더 ──
+  function render(){
+    if(!closed.length){
+      document.getElementById('mainContent').innerHTML=`
+        <div class="no-data">
+          <div class="icon">🧠</div>
+          <h2>아직 분석할 데이터가 없어요</h2>
+          <p>대시보드에서 포지션을 진입하고 익절/손절 처리하면<br>
+          진입 근거를 기반으로 자동으로 패턴을 분석해드려요.<br><br>
+          <strong style="color:var(--blue)">팁:</strong> 매매 시나리오 작성 시 진입 근거를 구체적으로 쓸수록<br>더 정확한 패턴 분석이 가능해요.</p>
+        </div>`;
+      return;
+    }
+
+    const kwMap = buildKeywordMap();
+    const monthly = buildMonthlyData();
+    const longData = calcDirData('long');
+    const shortData = calcDirData('short');
+    const insights = buildInsights(kwMap, longData, shortData);
+
+    // 전체 통계
+    const totalTrades=closed.length;
+    const totalWins=closed.filter(s=>s.closeType==='익절').length;
+    const totalPnl=closed.reduce((a,s)=>a+(calcPnL(s)||0),0);
+    const wr=(totalWins/totalTrades)*100;
+    const avgPnl=totalPnl/totalTrades;
+    const allPcts=closed.map(s=>calcPct(s)).filter(v=>v!=null);
+    const avgPct=allPcts.length?allPcts.reduce((a,b)=>a+b,0)/allPcts.length:0;
+
+    // 수익/손실 패턴 분류
+    const winPatterns=kwMap.filter(k=>k.cnt>=2&&k.wr>=60).sort((a,b)=>b.wr-a.wr).slice(0,8);
+    const losePatterns=kwMap.filter(k=>k.cnt>=2&&k.wr<40).sort((a,b)=>a.wr-b.wr).slice(0,8);
+    const allKwSorted=kwMap.sort((a,b)=>b.cnt-a.cnt).slice(0,30);
+
+    document.getElementById('mainContent').innerHTML=`
+      <!-- 요약 -->
+      <div class="summary-grid">
+        <div class="sum-card">
+          <div class="sum-label">분석된 매매 수</div>
+          <div class="sum-val c-blue">${totalTrades}<span style="font-size:14px;color:var(--muted)">회</span></div>
+          <div class="sum-sub">익절 ${totalWins}회 · 손절 ${totalTrades-totalWins}회</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-label">전체 승률</div>
+          <div class="sum-val ${wr>=50?'c-green':'c-red'}">${wr.toFixed(1)}<span style="font-size:14px">%</span></div>
+          <div class="sum-sub">${wr>=60?'🏆 우수':wr>=50?'⚠️ 보통':'🛑 개선 필요'}</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-label">순 손익</div>
+          <div class="sum-val ${cls(totalPnl)}">${fmt$(totalPnl)}</div>
+          <div class="sum-sub">평균 ${fmt$(avgPnl)} / 회</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-label">평균 수익률</div>
+          <div class="sum-val ${cls(avgPct)}">${fmtPct(avgPct)}</div>
+          <div class="sum-sub">회당 평균</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-label">발견된 패턴</div>
+          <div class="sum-val c-purple">${kwMap.length}<span style="font-size:14px;color:var(--muted)">개</span></div>
+          <div class="sum-sub">승리 패턴 ${winPatterns.length}개 · 손실 패턴 ${losePatterns.length}개</div>
+        </div>
+      </div>
+
+      <!-- 인사이트 -->
+      ${insights.length?`
+      <div class="sec">
+        <div class="sec-title">💡 AI 인사이트 <span class="sec-sub">내 매매 데이터 기반 분석</span></div>
+        <div class="insight-list">
+          ${insights.map(ins=>`
+            <div class="insight-item ${ins.type}">
+              <div class="insight-icon">${ins.icon}</div>
+              <div class="insight-text">${ins.text}</div>
+            </div>`).join('')}
+        </div>
+      </div>`:''}
+
+      <!-- 수익/손실 패턴 나란히 -->
+      <div class="two-col">
+        <!-- 수익 패턴 -->
+        <div class="pattern-box">
+          <div class="pattern-box-title" style="color:var(--green)">✅ 수익 나는 패턴 (승률 60%↑)</div>
+          ${winPatterns.length?`
+          <div class="kw-list">
+            ${winPatterns.map(k=>kwItem(k,'green')).join('')}
+          </div>`:`<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">아직 데이터가 부족해요<br>매매 횟수를 늘려가면 패턴이 발견돼요</div>`}
+        </div>
+        <!-- 손실 패턴 -->
+        <div class="pattern-box">
+          <div class="pattern-box-title" style="color:var(--red)">🛑 손실 나는 패턴 (승률 40%↓)</div>
+          ${losePatterns.length?`
+          <div class="kw-list">
+            ${losePatterns.map(k=>kwItem(k,'red')).join('')}
+          </div>`:`<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">손실 패턴이 없어요! 👍</div>`}
+        </div>
+      </div>
+
+      <!-- 전체 키워드 분석 -->
+      <div class="sec">
+        <div class="sec-title">📊 전체 키워드별 승률 분석 <span class="sec-sub">키워드 클릭 시 해당 매매 목록 보기</span></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <table class="kw-table">
+            <thead><tr>
+              <th>키워드</th><th>횟수</th><th>익절</th><th>손절</th>
+              <th>승률</th><th class="bar-cell">승률 바</th><th>평균 손익</th>
+            </tr></thead>
+            <tbody>
+              ${allKwSorted.map(k=>{
+                const wrCls=k.wr>=60?'c-green':k.wr>=40?'c-yellow':'c-red';
+                const barColor=k.wr>=60?'var(--green)':k.wr>=40?'var(--yellow)':'var(--red)';
+                return `<tr style="cursor:pointer" onclick="showTrades('${k.kw}')">
+                  <td style="font-weight:700">${k.kw}</td>
+                  <td style="color:var(--muted)">${k.cnt}회</td>
+                  <td class="c-green">${k.wins}</td>
+                  <td class="c-red">${k.losses}</td>
+                  <td class="${wrCls}" style="font-weight:700">${k.wr.toFixed(0)}%</td>
+                  <td class="bar-cell">
+                    <div class="mini-bar-wrap">
+                      <div class="mini-bar" style="width:${k.wr}%;background:${barColor}"></div>
+                    </div>
+                  </td>
+                  <td class="${cls(k.avgPnl)}" style="font-weight:600">${fmt$(k.avgPnl)}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LONG vs SHORT -->
+      <div class="sec">
+        <div class="sec-title">↕️ 방향별 성과 분석</div>
+        <div class="dir-grid">
+          ${dirCard('LONG', longData, 'var(--green)')}
+          ${dirCard('SHORT', shortData, 'var(--red)')}
+        </div>
+      </div>
+
+      <!-- 월별 성과 -->
+      ${monthly.length>=2?`
+      <div class="sec">
+        <div class="sec-title">📅 월별 성과</div>
+        <div class="monthly-grid">
+          ${monthly.map(m=>`
+            <div class="month-card">
+              <div class="month-label">${m.month}</div>
+              <div class="month-pnl ${cls(m.pnl)}">${fmt$(m.pnl)}</div>
+              <div class="month-cnt">${m.cnt}회 · 승률 ${m.cnt?(m.wins/m.cnt*100).toFixed(0):0}%</div>
+            </div>`).join('')}
+        </div>
+      </div>`:''}
+
+      <!-- 태그 클라우드 -->
+      <div class="sec">
+        <div class="sec-title">☁️ 키워드 클라우드</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px">
+          <div class="tag-cloud">
+            ${kwMap.slice(0,40).map(k=>{
+              const size=Math.min(Math.max(k.cnt*2+10,12),22);
+              const bg=k.wr>=60?'rgba(63,185,80,.15)':k.wr>=40?'rgba(210,153,34,.15)':'rgba(248,81,73,.15)';
+              const color=k.wr>=60?'var(--green)':k.wr>=40?'var(--yellow)':'var(--red)';
+              return `<span class="cloud-tag" style="font-size:${size}px;background:${bg};color:${color};border-color:${color}33"
+                onclick="showTrades('${k.kw}')" title="승률 ${k.wr.toFixed(0)}% · ${k.cnt}회">${k.kw}</span>`;
+            }).join('')}
+          </div>
+          <div style="margin-top:12px;font-size:11px;color:var(--muted)">🟢 초록 = 수익 패턴 · 🟡 노랑 = 중립 · 🔴 빨강 = 손실 패턴 · 크기 = 등장 횟수</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function kwItem(k, type){
+    const barColor=type==='green'?'var(--green)':'var(--red)';
+    const wrCls=type==='green'?'wr-high':'wr-low';
+    return `
+    <div class="kw-item" style="cursor:pointer" onclick="showTrades('${k.kw}')">
+      <div class="kw-top">
+        <span class="kw-name">${k.kw}</span>
+        <div class="kw-badges">
+          <span class="kw-cnt">${k.cnt}회</span>
+          <span class="kw-wr ${wrCls}">${k.wr.toFixed(0)}%</span>
+        </div>
+      </div>
+      <div class="kw-bar-wrap">
+        <div class="kw-bar" style="width:${k.wr}%;background:${barColor}"></div>
+      </div>
+      <div class="kw-detail">
+        <span>익절 ${k.wins} · 손절 ${k.losses}</span>
+        <span class="${cls(k.avgPnl)}">${fmt$(k.avgPnl)} / 회</span>
+      </div>
+    </div>`;
+  }
+
+  function dirCard(label, data, color){
+    const wrCls=data.wr>=50?'c-green':'c-red';
+    const totalPnlSign=data.totalPnl>=0?'+':'';
+    return `
+    <div class="dir-card">
+      <div class="dir-title" style="color:${color}">${label==='LONG'?'📈':'📉'} ${label}</div>
+      <div class="dir-wr ${wrCls}">${data.cnt?data.wr.toFixed(1):'-'}%</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">승률</div>
+      <div class="dir-row">
+        <div class="dir-stat"><div class="dir-sl">매매 수</div><div class="dir-sv c-blue">${data.cnt}회</div></div>
+        <div class="dir-stat"><div class="dir-sl">익절</div><div class="dir-sv c-green">${data.wins}회</div></div>
+        <div class="dir-stat"><div class="dir-sl">손절</div><div class="dir-sv c-red">${data.losses}회</div></div>
+        <div class="dir-stat"><div class="dir-sl">순 손익</div><div class="dir-sv ${cls(data.totalPnl)}">${totalPnlSign}$${Math.abs(data.totalPnl).toFixed(0)}</div></div>
+        <div class="dir-stat"><div class="dir-sl">평균 손익</div><div class="dir-sv ${cls(data.avgPnl)}">${fmt$(data.avgPnl)}</div></div>
+        <div class="dir-stat"><div class="dir-sl"></div><div class="dir-sv"></div></div>
+      </div>
+    </div>`;
+  }
+
+  // ── 키워드 클릭 시 매매 목록 ──
+  function showTrades(kw){
+    const text=kw.toUpperCase();
+    const matches=closed.filter(s=>{
+      const memo=[s.memo||'',s.analysis||'',s.tags||''].join(' ').toUpperCase();
+      return memo.includes(text);
+    });
+    const wins=matches.filter(s=>s.closeType==='익절');
+
+    document.getElementById('modalKw').innerHTML=
+      `<span style="color:var(--purple)">"${kw}"</span> 포함 매매 — ${matches.length}건 (승률 ${matches.length?(wins.length/matches.length*100).toFixed(0):0}%)`;
+
+    document.getElementById('modalList').innerHTML = matches.length
+      ? matches.map(s=>{
+          const pnl=calcPnL(s), pct=calcPct(s);
+          const memo=[s.memo||'',s.analysis||''].join(' ')
+            .replace(new RegExp(kw,'gi'), m=>`<span class="highlight">${m}</span>`);
+          return `
+          <div class="trade-item ${s.closeType==='익절'?'win':'lose'}">
+            <div class="trade-head">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="trade-ticker">${s.ticker}</span>
+                <span style="font-size:11px;font-weight:700;color:${s.direction==='long'?'var(--green)':'var(--red)'}">${s.direction.toUpperCase()}</span>
+                <span style="font-size:11px;font-weight:700;color:${s.closeType==='익절'?'var(--green)':'var(--red)'}">${s.closeType==='익절'?'✅ 익절':'🛑 손절'}</span>
+              </div>
+              <div style="text-align:right">
+                ${pnl!=null?`<div style="font-weight:700;font-size:13px" class="${cls(pnl)}">${fmt$(pnl)} (${fmtPct(pct)})</div>`:''}
+                <div style="font-size:11px;color:var(--muted)">${s.closeDate||s.date}</div>
+              </div>
+            </div>
+            ${memo?`<div class="trade-memo">${memo}</div>`:''}
+          </div>`;
+        }).join('')
+      : '<div style="text-align:center;padding:20px;color:var(--muted)">해당 매매가 없어요</div>';
+
+    document.getElementById('tradeModal').classList.add('open');
+  }
+
+  function closeModal(){
+    document.getElementById('tradeModal').classList.remove('open');
+  }
+  document.getElementById('tradeModal').addEventListener('click', e=>{
+    if(e.target===e.currentTarget) closeModal();
+  });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+  // ── 실행 ──
+  render();
+</script>
+</body>
+</html>

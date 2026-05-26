@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>차트 연구실 · Trading Desk</title>
+<style>
+  :root{
+    --bg:#0a0e17;--surface:#111827;--surface2:#1a2235;--surface3:#212d42;
+    --border:#2a3548;--border2:#334060;
+    --text:#e8edf5;--muted:#6b7fa3;--muted2:#8896b3;
+    --green:#2ecc71;--green2:#1a7a43;
+    --red:#e74c3c;--red2:#7a1a1a;
+    --yellow:#f39c12;--blue:#4f9eff;--blue2:#1a3a6a;
+    --purple:#a855f7;--purple2:#3b1a6a;
+    --cyan:#06b6d4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh;}
+
+  /* ── 헤더 ── */
+  header{
+    background:linear-gradient(135deg,#0d1629 0%,#111827 50%,#0d1a2e 100%);
+    border-bottom:1px solid var(--border);
+    padding:0 32px;height:64px;
+    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:100;
+    box-shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  .header-left{display:flex;align-items:center;gap:16px;}
+  .back-btn{
+    color:var(--muted);text-decoration:none;font-size:12px;
+    display:flex;align-items:center;gap:5px;
+    background:var(--surface2);border:1px solid var(--border);
+    padding:6px 12px;border-radius:8px;transition:all .15s;
+  }
+  .back-btn:hover{color:var(--text);border-color:var(--border2);}
+  .logo{
+    display:flex;align-items:center;gap:10px;
+    font-size:19px;font-weight:800;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .logo-icon{
+    width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--cyan));
+    border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex-shrink:0;box-shadow:0 0 16px rgba(79,158,255,.35);
+  }
+  .btn-new{
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    color:#fff;border:none;border-radius:10px;
+    padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;
+    box-shadow:0 0 20px rgba(79,158,255,.3);
+    transition:all .2s;
+  }
+  .btn-new:hover{box-shadow:0 0 28px rgba(79,158,255,.5);transform:translateY(-1px);}
+
+  /* ── 히어로 스탯 바 ── */
+  .stats-bar{
+    background:linear-gradient(135deg,#0d1629,#111827);
+    border-bottom:1px solid var(--border);
+    padding:14px 32px;
+    display:flex;gap:32px;align-items:center;flex-wrap:wrap;
+  }
+  .stat-item{display:flex;align-items:center;gap:8px;}
+  .stat-dot{width:8px;height:8px;border-radius:50%;}
+  .stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .stat-val{font-size:16px;font-weight:800;margin-left:4px;}
+
+  /* ── 메인 ── */
+  .main{padding:28px 32px;max-width:1500px;margin:0 auto;}
+
+  /* ── 툴바 ── */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap;}
+  .filters{display:flex;gap:6px;}
+  .fb{
+    background:var(--surface2);border:1px solid var(--border);
+    color:var(--muted);border-radius:8px;
+    padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;
+    transition:all .15s;
+  }
+  .fb:hover{border-color:var(--border2);color:var(--text);}
+  .fb.on{background:rgba(79,158,255,.15);border-color:var(--blue);color:var(--blue);}
+  .fb.on-long{background:rgba(46,204,113,.12);border-color:var(--green);color:var(--green);}
+  .fb.on-short{background:rgba(231,76,60,.12);border-color:var(--red);color:var(--red);}
+  .search-wrap{position:relative;}
+  .search-wrap::before{content:'🔍';position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;}
+  .search-box{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:9px;padding:8px 14px 8px 32px;
+    color:var(--text);font-size:13px;outline:none;width:200px;
+    transition:border-color .15s;
+  }
+  .search-box:focus{border-color:var(--blue);}
+
+  /* ── 카드 그리드 ── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;}
+
+  /* ── 카드 ── */
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:16px;overflow:hidden;
+    transition:all .2s;cursor:default;
+  }
+  .card:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.4);}
+
+  /* 카드 이미지 */
+  .card-img-wrap{position:relative;overflow:hidden;}
+  .card-img{
+    width:100%;aspect-ratio:16/9;object-fit:cover;
+    display:block;cursor:zoom-in;
+    transition:transform .3s;
+  }
+  .card-img:hover{transform:scale(1.02);}
+  .card-img-empty{
+    width:100%;aspect-ratio:16/9;
+    background:linear-gradient(135deg,var(--surface2),var(--surface3));
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--muted);font-size:12px;gap:8px;
+  }
+  /* 이미지 위 방향 뱃지 오버레이 */
+  .img-overlay{
+    position:absolute;top:10px;left:10px;
+    display:flex;gap:6px;
+  }
+  .ov-ticker{
+    background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+    color:#fff;font-size:14px;font-weight:800;
+    padding:4px 10px;border-radius:7px;
+  }
+  .ov-long{
+    background:rgba(46,204,113,.25);backdrop-filter:blur(8px);
+    border:1px solid rgba(46,204,113,.5);
+    color:var(--green);font-size:11px;font-weight:700;
+    padding:4px 8px;border-radius:6px;
+  }
+  .ov-short{
+    background:rgba(231,76,60,.25);backdrop-filter:blur(8px);
+    border:1px solid rgba(231,76,60,.5);
+    color:var(--red);font-size:11px;font-weight:700;
+    padding:4px 8px;border-radius:6px;
+  }
+  .img-overlay-date{
+    position:absolute;bottom:10px;right:10px;
+    background:rgba(0,0,0,.65);backdrop-filter:blur(8px);
+    color:var(--muted2);font-size:10px;
+    padding:3px 8px;border-radius:5px;
+  }
+
+  /* 카드 바디 */
+  .card-body{padding:16px 18px 14px;}
+
+  /* 가격 그리드 */
+  .price-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+  .pb{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:9px;padding:9px 10px;text-align:center;
+    transition:border-color .15s;
+  }
+  .pb:hover{border-color:var(--border2);}
+  .pl{font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+  .pv{font-size:15px;font-weight:800;}
+  .pv-e{color:var(--blue);}
+  .pv-t{color:var(--green);}
+  .pv-s{color:var(--red);}
+
+  /* R:R 배지 */
+  .rr-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+  .rr-badge{
+    background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(168,85,247,.08));
+    border:1px solid rgba(168,85,247,.3);
+    color:var(--purple);font-size:12px;font-weight:700;
+    padding:4px 12px;border-radius:20px;
+  }
+  .sl-badge{
+    background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.2);
+    color:var(--red);font-size:11px;font-weight:600;
+    padding:4px 10px;border-radius:20px;
+  }
+
+  /* 태그 */
+  .tag-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+  .tag{
+    background:rgba(79,158,255,.1);color:var(--blue);
+    border:1px solid rgba(79,158,255,.2);
+    border-radius:5px;padding:2px 8px;font-size:11px;
+  }
+
+  /* 메모 */
+  .card-memo{
+    font-size:12px;color:var(--muted2);line-height:1.6;
+    margin-bottom:12px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+
+  /* 카드 하단 */
+  .card-foot{display:flex;gap:6px;align-items:center;}
+  .btn-tv{
+    flex:1;
+    background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(79,158,255,.1));
+    border:1px solid rgba(168,85,247,.3);color:var(--purple);
+    border-radius:8px;padding:8px 0;font-size:11px;font-weight:700;
+    text-align:center;text-decoration:none;transition:all .15s;
+  }
+  .btn-tv:hover{background:linear-gradient(135deg,rgba(168,85,247,.25),rgba(79,158,255,.2));box-shadow:0 0 12px rgba(168,85,247,.2);}
+  .btn-edit{
+    background:var(--surface2);border:1px solid var(--border);
+    color:var(--muted);border-radius:8px;padding:8px 12px;
+    font-size:11px;cursor:pointer;transition:all .15s;
+  }
+  .btn-edit:hover{color:var(--text);border-color:var(--border2);}
+  .btn-del{
+    background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);
+    color:var(--red);border-radius:8px;padding:8px 10px;
+    font-size:11px;cursor:pointer;transition:all .15s;
+  }
+  .btn-del:hover{background:rgba(231,76,60,.18);}
+
+  /* 빈 상태 */
+  .empty{
+    text-align:center;padding:100px 20px;
+    grid-column:1/-1;
+  }
+  .empty-icon{font-size:56px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(79,158,255,.3));}
+  .empty-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px;}
+  .empty-sub{color:var(--muted);font-size:14px;line-height:1.6;}
+
+  /* ══════════════ 모달 ══════════════ */
+  .modal-bg{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+    z-index:200;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{
+    background:linear-gradient(135deg,#111827,#0d1629);
+    border:1px solid var(--border2);border-radius:18px;
+    width:100%;max-width:780px;max-height:92vh;overflow-y:auto;
+    box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);
+  }
+  .modal-head{
+    padding:22px 26px 18px;
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(135deg,rgba(79,158,255,.06),transparent);
+  }
+  .modal-title{
+    font-size:18px;font-weight:800;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .modal-close{
+    background:var(--surface2);border:1px solid var(--border);
+    color:var(--muted);width:30px;height:30px;border-radius:8px;
+    font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .15s;
+  }
+  .modal-close:hover{color:var(--text);border-color:var(--border2);}
+  .modal-body{padding:22px 26px;}
+  .modal-foot{
+    padding:16px 26px;border-top:1px solid var(--border);
+    display:flex;gap:8px;justify-content:flex-end;
+  }
+
+  /* 섹션 구분 */
+  .msec{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .msec::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* 폼 */
+  .form-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px;}
+  .fg-full{flex:1 1 100%;}
+  label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+  .fi{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:9px;color:var(--text);
+    padding:10px 13px;font-size:14px;outline:none;font-family:inherit;width:100%;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,158,255,.1);}
+  textarea.fi{resize:vertical;min-height:90px;line-height:1.6;}
+
+  /* 방향 토글 */
+  .dir-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;}
+  .dt-btn{flex:1;padding:8px 0;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:transparent;color:var(--muted);transition:all .18s;}
+  .dt-btn.long{background:linear-gradient(135deg,var(--green2),rgba(46,204,113,.3));color:var(--green);box-shadow:0 0 12px rgba(46,204,113,.2);}
+  .dt-btn.short{background:linear-gradient(135deg,var(--red2),rgba(231,76,60,.3));color:var(--red);box-shadow:0 0 12px rgba(231,76,60,.2);}
+
+  /* 이미지 붙여넣기 영역 */
+  .paste-zone{
+    border:2px dashed var(--border2);border-radius:12px;
+    padding:32px;text-align:center;cursor:pointer;
+    transition:all .2s;position:relative;margin-bottom:16px;
+    background:linear-gradient(135deg,rgba(79,158,255,.03),rgba(6,182,212,.02));
+  }
+  .paste-zone:hover,.paste-zone.drag{
+    border-color:var(--blue);
+    background:linear-gradient(135deg,rgba(79,158,255,.08),rgba(6,182,212,.05));
+    box-shadow:0 0 20px rgba(79,158,255,.1);
+  }
+  .paste-zone.has-img{padding:0;border-style:solid;border-color:var(--border2);background:none;}
+  .paste-zone img{width:100%;border-radius:10px;display:block;}
+  .paste-hint{color:var(--muted);font-size:13px;pointer-events:none;}
+  .paste-hint .big{font-size:36px;margin-bottom:10px;}
+  .paste-hint b{color:var(--text);}
+  .paste-hint small{font-size:11px;color:var(--muted);margin-top:4px;display:block;}
+  .paste-clear{
+    position:absolute;top:10px;right:10px;
+    background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+    border:none;color:#fff;border-radius:7px;
+    padding:5px 12px;font-size:11px;cursor:pointer;z-index:1;
+    transition:background .15s;
+  }
+  .paste-clear:hover{background:rgba(231,76,60,.8);}
+
+  /* R:R 프리뷰 */
+  .rr-preview{
+    background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(79,158,255,.06));
+    border:1px solid rgba(168,85,247,.25);
+    border-radius:10px;padding:12px 16px;
+    font-size:12px;color:var(--muted2);
+    margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;
+  }
+  .rr-preview .rr-item{display:flex;flex-direction:column;gap:2px;}
+  .rr-preview .rr-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.4px;}
+  .rr-preview .rr-num{font-size:16px;font-weight:800;color:var(--purple);}
+  .rr-preview .rr-num.g{color:var(--green);}
+  .rr-preview .rr-num.r{color:var(--red);}
+
+  /* 버튼 */
+  .btn-save{
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    color:#fff;border:none;border-radius:9px;
+    padding:11px 28px;font-size:14px;font-weight:700;cursor:pointer;
+    box-shadow:0 0 16px rgba(79,158,255,.3);transition:all .2s;
+  }
+  .btn-save:hover{box-shadow:0 0 24px rgba(79,158,255,.5);transform:translateY(-1px);}
+  .btn-cancel{
+    background:var(--surface2);border:1px solid var(--border);
+    color:var(--muted);border-radius:9px;
+    padding:11px 20px;font-size:14px;cursor:pointer;transition:all .15s;
+  }
+  .btn-cancel:hover{color:var(--text);border-color:var(--border2);}
+
+  /* 이미지 전체화면 */
+  .img-modal-bg{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,.95);backdrop-filter:blur(10px);
+    z-index:300;align-items:center;justify-content:center;cursor:zoom-out;
+  }
+  .img-modal-bg.show{display:flex;}
+  .img-modal-bg img{max-width:96vw;max-height:94vh;border-radius:10px;object-fit:contain;box-shadow:0 0 60px rgba(0,0,0,.8);}
+
+  /* ── 빠른 입력 바 ── */
+  .quick-bar{
+    background:linear-gradient(135deg,#0d1629,#0f1a2e);
+    border-bottom:1px solid var(--border);
+    padding:13px 32px;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .quick-label{
+    font-size:11px;font-weight:800;color:var(--blue);
+    white-space:nowrap;letter-spacing:.8px;text-transform:uppercase;
+    margin-right:2px;display:flex;align-items:center;gap:6px;
+  }
+  .qi{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);
+    padding:8px 11px;font-size:13px;outline:none;
+    transition:border-color .15s,box-shadow .15s;
+    font-family:inherit;
+  }
+  .qi:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(79,158,255,.1);}
+  .qi-ticker{width:88px;font-weight:800;font-size:14px;}
+  .qi-price{width:105px;}
+  .qi-dir-wrap{
+    display:flex;background:var(--surface2);
+    border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  }
+  .qi-dir-btn{
+    padding:8px 13px;border:none;cursor:pointer;font-size:12px;font-weight:700;
+    background:transparent;color:var(--muted);transition:all .15s;
+  }
+  .qi-dir-btn.q-long {background:rgba(46,204,113,.18);color:var(--green);}
+  .qi-dir-btn.q-short{background:rgba(231,76,60,.18);color:var(--red);}
+  .btn-qs{
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    color:#fff;border:none;border-radius:8px;
+    padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;
+    box-shadow:0 0 12px rgba(79,158,255,.25);transition:all .2s;white-space:nowrap;
+  }
+  .btn-qs:hover{box-shadow:0 0 22px rgba(79,158,255,.45);transform:translateY(-1px);}
+  .btn-qd{
+    background:var(--surface2);border:1px solid var(--border);
+    color:var(--muted2);border-radius:8px;
+    padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;
+    transition:all .15s;white-space:nowrap;
+  }
+  .btn-qd:hover{color:var(--text);border-color:var(--border2);}
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="index.html">← 대시보드</a>
+    <div class="logo">
+      <div class="logo-icon">🔬</div>
+      차트 연구실
+    </div>
+  </div>
+  <button class="btn-new" onclick="openModal()">+ 새 차트 분석</button>
+</header>
+<script>
+  if(TD_ACTIVE){
+    const c=TD_COLORS[TD_ACTIVE]||'#4f9eff';
+    // .logo 가 -webkit-text-fill-color:transparent 이므로 header-left에 삽입
+    document.querySelector('.header-left').insertAdjacentHTML('beforeend',
+      `<span style="display:inline-flex;align-items:center;gap:8px;border-left:3px solid ${c};padding-left:12px;margin-left:4px;">` +
+      `<span style="font-size:18px;font-weight:900;color:${c};-webkit-text-fill-color:${c};text-shadow:0 0 12px ${c}88;">${TD_ACTIVE}</span>` +
+      `<button onclick="switchUser()" style="background:${c}22;border:1px solid ${c}66;color:${c};-webkit-text-fill-color:${c};border-radius:7px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.2px;" onmouseover="this.style.background='${c}44'" onmouseout="this.style.background='${c}22'">👤 사용자 전환</button>` +
+      `</span>`
+    );
+  }
+</script>
+
+<!-- 스탯 바 -->
+<div class="stats-bar" id="statsBar"></div>
+
+<!-- 빠른 입력 바 (새 차트 분석) -->
+<div class="quick-bar">
+  <div class="quick-label">🔬 새 차트 분석</div>
+  <input class="qi qi-ticker" id="qi_ticker" placeholder="AAPL" autocomplete="off"
+         oninput="this.value=this.value.toUpperCase()"
+         onkeydown="if(event.key==='Enter')quickSave()"/>
+  <div class="qi-dir-wrap">
+    <button class="qi-dir-btn q-long" id="qi_long"  onclick="qiSetDir('long')">▲ LONG</button>
+    <button class="qi-dir-btn"        id="qi_short" onclick="qiSetDir('short')">▼ SHORT</button>
+  </div>
+  <input class="qi qi-price" id="qi_entry"  type="number" placeholder="진입가 $" step="0.01"
+         onkeydown="if(event.key==='Enter')quickSave()"/>
+  <input class="qi qi-price" id="qi_target" type="number" placeholder="목표가 $" step="0.01"
+         onkeydown="if(event.key==='Enter')quickSave()"/>
+  <input class="qi qi-price" id="qi_stop"   type="number" placeholder="손절가 $" step="0.01"
+         onkeydown="if(event.key==='Enter')quickSave()"/>
+  <button class="btn-qs" onclick="quickSave()">⚡ 빠른 저장</button>
+  <button class="btn-qd" onclick="quickToDetail()">📋 상세 입력</button>
+</div>
+
+<!-- 메인 -->
+<div class="main">
+  <div class="toolbar">
+    <div class="filters">
+      <button class="fb on" data-f="all"   onclick="setFilter(this,'all')">전체</button>
+      <button class="fb"    data-f="long"  onclick="setFilter(this,'long')">▲ LONG</button>
+      <button class="fb"    data-f="short" onclick="setFilter(this,'short')">▼ SHORT</button>
+    </div>
+    <div class="search-wrap">
+      <input class="search-box" id="searchBox" placeholder="종목 검색" oninput="renderCards()"/>
+    </div>
+  </div>
+
+  <div class="grid" id="cardGrid"></div>
+</div>
+
+<!-- 모달 -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">새 차트 분석</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- 이미지 -->
+      <div class="msec">📸 차트 이미지</div>
+      <div class="paste-zone" id="pasteZone" onclick="triggerFileInput()">
+        <button class="paste-clear" id="clearImgBtn" style="display:none" onclick="clearImage(event)">✕ 삭제</button>
+        <div class="paste-hint" id="pasteHint">
+          <div class="big">📋</div>
+          <div><b>Cmd+V</b> 로 클립보드 이미지 붙여넣기</div>
+          <small>또는 클릭해서 파일 선택 · 드래그&드롭도 가능</small>
+        </div>
+        <img id="previewImg" style="display:none" alt="미리보기"/>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)"/>
+
+      <!-- 기본 정보 -->
+      <div class="msec">📌 기본 정보</div>
+      <div class="form-row">
+        <div class="fg" style="min-width:110px">
+          <label>종목 티커</label>
+          <input class="fi" id="f_ticker" placeholder="AAPL" style="text-transform:uppercase;font-weight:800;font-size:16px"/>
+        </div>
+        <div class="fg" style="min-width:180px">
+          <label>방향</label>
+          <div class="dir-toggle">
+            <button class="dt-btn long" id="dt_long" onclick="setDir('long')">▲ LONG</button>
+            <button class="dt-btn" id="dt_short" onclick="setDir('short')">▼ SHORT</button>
+          </div>
+        </div>
+        <div class="fg" style="min-width:140px">
+          <label>날짜</label>
+          <input class="fi" id="f_date" type="date"/>
+        </div>
+      </div>
+
+      <!-- 가격 -->
+      <div class="msec">💰 가격 설정</div>
+      <div class="form-row">
+        <div class="fg">
+          <label>진입가 $</label>
+          <input class="fi" id="f_entry" type="number" placeholder="0.00" step="0.01" oninput="calcRR()"/>
+        </div>
+        <div class="fg">
+          <label>목표가 $</label>
+          <input class="fi" id="f_target" type="number" placeholder="0.00" step="0.01" oninput="calcRR()"/>
+        </div>
+        <div class="fg">
+          <label>손절가 $</label>
+          <input class="fi" id="f_stop" type="number" placeholder="0.00" step="0.01" oninput="calcRR()"/>
+        </div>
+      </div>
+
+      <!-- R:R 프리뷰 -->
+      <div class="rr-preview" id="rrPreview" style="display:none">
+        <div class="rr-item"><div class="rr-lbl">리스크</div><div class="rr-num r" id="rr_risk">—</div></div>
+        <div class="rr-item"><div class="rr-lbl">목표 수익</div><div class="rr-num g" id="rr_reward">—</div></div>
+        <div class="rr-item"><div class="rr-lbl">R : R</div><div class="rr-num" id="rr_val">—</div></div>
+        <div class="rr-item"><div class="rr-lbl">손절 %</div><div class="rr-num r" id="rr_slpct">—</div></div>
+        <div class="rr-item"><div class="rr-lbl">목표 %</div><div class="rr-num g" id="rr_tgpct">—</div></div>
+      </div>
+
+      <!-- 링크 -->
+      <div class="msec">📊 트레이딩뷰</div>
+      <div class="form-row">
+        <div class="fg fg-full">
+          <label>차트 링크 URL</label>
+          <input class="fi" id="f_tvurl" type="url" placeholder="https://www.tradingview.com/chart/..."/>
+        </div>
+      </div>
+
+      <!-- 메모 & 태그 -->
+      <div class="msec">📝 분석 노트</div>
+      <div class="form-row">
+        <div class="fg fg-full">
+          <label>분석 메모</label>
+          <textarea class="fi" id="f_memo" placeholder="차트 패턴, 진입 근거, 주요 레벨, 주의사항..."></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg fg-full">
+          <label>태그 (쉼표로 구분)</label>
+          <input class="fi" id="f_tags" placeholder="돌파, 지지반등, 갭상승, 눌림목..."/>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveCard()">💾 저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이미지 전체화면 -->
+<div class="img-modal-bg" id="imgModalBg" onclick="closeImgModal()">
+  <img id="imgModalImg" src="" alt=""/>
+</div>
+
+<script>
+  // ── 유저 확인 ──
+  const TD_ACTIVE = localStorage.getItem('td_active_user')||'';
+  const TD_COLORS = {'지훈':'#4f9eff','성준':'#2ecc71','도영':'#a855f7','기성':'#f39c12'};
+  function switchUser(){ localStorage.removeItem('td_active_user'); location.href='index.html'; }
+  if(!TD_ACTIVE){ location.href='index.html'; }
+
+  const STORE = TD_ACTIVE ? `td_${TD_ACTIVE}_chartlab` : 'td_default_chartlab';
+  let charts = JSON.parse(localStorage.getItem(STORE)||'[]');
+  let editId = null, currentDir = 'long', currentImg = null, filterVal = 'all';
+
+  const save = () => localStorage.setItem(STORE, JSON.stringify(charts));
+  const uid  = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+  // ── 스탯 바 ──
+  function renderStats(){
+    const total = charts.length;
+    const longs = charts.filter(c=>c.direction==='long').length;
+    const shorts = charts.filter(c=>c.direction==='short').length;
+    const withImg = charts.filter(c=>c.imageData).length;
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat-item">
+        <div class="stat-dot" style="background:#4f9eff;box-shadow:0 0 6px #4f9eff"></div>
+        <span class="stat-label">총 분석</span>
+        <span class="stat-val" style="color:#4f9eff">${total}</span>
+      </div>
+      <div class="stat-item">
+        <div class="stat-dot" style="background:#2ecc71;box-shadow:0 0 6px #2ecc71"></div>
+        <span class="stat-label">LONG</span>
+        <span class="stat-val" style="color:#2ecc71">${longs}</span>
+      </div>
+      <div class="stat-item">
+        <div class="stat-dot" style="background:#e74c3c;box-shadow:0 0 6px #e74c3c"></div>
+        <span class="stat-label">SHORT</span>
+        <span class="stat-val" style="color:#e74c3c">${shorts}</span>
+      </div>
+      <div class="stat-item">
+        <div class="stat-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div>
+        <span class="stat-label">이미지 있음</span>
+        <span class="stat-val" style="color:#a855f7">${withImg}</span>
+      </div>
+    `;
+  }
+
+  // ── 필터 ──
+  function setFilter(el, v){
+    document.querySelectorAll('.fb').forEach(b=>{b.classList.remove('on','on-long','on-short');});
+    filterVal = v;
+    if(v==='all') el.classList.add('on');
+    else if(v==='long') el.classList.add('on-long');
+    else el.classList.add('on-short');
+    renderCards();
+  }
+
+  // ── 카드 렌더 ──
+  function renderCards(){
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    let list = [...charts].reverse();
+    if(filterVal !== 'all') list = list.filter(c=>c.direction===filterVal);
+    if(q) list = list.filter(c=>(c.ticker||'').toLowerCase().includes(q));
+
+    const el = document.getElementById('cardGrid');
+    if(!list.length){
+      el.innerHTML = `<div class="empty">
+        <div class="empty-icon">🔬</div>
+        <div class="empty-title">아직 차트 분석이 없어요</div>
+        <div class="empty-sub">오른쪽 위 <b style="color:var(--blue)">+ 새 차트 분석</b> 버튼을 눌러<br>첫 번째 차트 분석을 시작해보세요</div>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = list.map(c=>{
+      const rr = rrCalc(c.entry, c.target, c.stop, c.direction);
+      const tags = c.tags ? c.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
+      const isLong = c.direction === 'long';
+      const slPct = c.entry && c.stop ? Math.abs((parseFloat(c.stop)-parseFloat(c.entry))/parseFloat(c.entry)*100).toFixed(1) : null;
+
+      return `
+      <div class="card">
+        <div class="card-img-wrap">
+          ${c.imageData
+            ? `<img class="card-img" src="${c.imageData}" alt="차트" onclick="openImgModal('${c.id}')"/>`
+            : `<div class="card-img-empty">
+                <span style="font-size:32px">📷</span>
+                <span>이미지 없음</span>
+               </div>`
+          }
+          <div class="img-overlay">
+            <span class="ov-ticker">${c.ticker||'—'}</span>
+            <span class="${isLong?'ov-long':'ov-short'}">${isLong?'▲ LONG':'▼ SHORT'}</span>
+          </div>
+          ${c.date?`<div class="img-overlay-date">${c.date}</div>`:''}
+        </div>
+        <div class="card-body">
+          <div class="price-row">
+            <div class="pb"><div class="pl">진입가</div><div class="pv pv-e">${c.entry?'$'+parseFloat(c.entry).toFixed(2):'—'}</div></div>
+            <div class="pb"><div class="pl">목표가</div><div class="pv pv-t">${c.target?'$'+parseFloat(c.target).toFixed(2):'—'}</div></div>
+            <div class="pb"><div class="pl">손절가</div><div class="pv pv-s">${c.stop?'$'+parseFloat(c.stop).toFixed(2):'—'}</div></div>
+          </div>
+          <div class="rr-row">
+            ${rr?`<span class="rr-badge">⚖️ R:R &nbsp;1 : ${rr}</span>`:''}
+            ${slPct?`<span class="sl-badge">손절 ${slPct}%</span>`:''}
+          </div>
+          ${tags.length?`<div class="tag-row">${tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
+          ${c.memo?`<div class="card-memo">${c.memo}</div>`:''}
+          <div class="card-foot">
+            ${c.tvurl
+              ? `<a class="btn-tv" href="${c.tvurl}" target="_blank">📊 저장된 차트 열기 ↗</a>`
+              : `<a class="btn-tv" href="https://www.tradingview.com/chart/?symbol=${c.ticker}" target="_blank">🔗 트레이딩뷰 ↗</a>`
+            }
+            <button class="btn-edit" onclick="openEdit('${c.id}')">✏️</button>
+            <button class="btn-del" onclick="delCard('${c.id}')">✕</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── R:R ──
+  function rrCalc(e,t,s,d){
+    if(!e||!t||!s) return null;
+    const rw=d==='long'?+t-+e:+e-+t, rk=d==='long'?+e-+s:+s-+e;
+    return rk>0?(rw/rk).toFixed(2):null;
+  }
+  function calcRR(){
+    const e=parseFloat(document.getElementById('f_entry').value);
+    const t=parseFloat(document.getElementById('f_target').value);
+    const s=parseFloat(document.getElementById('f_stop').value);
+    const prev=document.getElementById('rrPreview');
+    if(!e||!t||!s){prev.style.display='none';return;}
+    const rw=currentDir==='long'?t-e:e-t, rk=currentDir==='long'?e-s:s-e;
+    if(rk<=0){prev.style.display='none';return;}
+    document.getElementById('rr_risk').textContent=`$${Math.abs(rk).toFixed(2)}`;
+    document.getElementById('rr_reward').textContent=`$${Math.abs(rw).toFixed(2)}`;
+    document.getElementById('rr_val').textContent=`1 : ${(rw/rk).toFixed(2)}`;
+    document.getElementById('rr_slpct').textContent=`${(rk/e*100).toFixed(2)}%`;
+    document.getElementById('rr_tgpct').textContent=`${(rw/e*100).toFixed(2)}%`;
+    prev.style.display='flex';
+  }
+
+  // ── 방향 ──
+  function setDir(d){
+    currentDir=d;
+    document.getElementById('dt_long').className ='dt-btn'+(d==='long'?' long':'');
+    document.getElementById('dt_short').className='dt-btn'+(d==='short'?' short':'');
+    calcRR();
+  }
+
+  // ── 이미지 ──
+  function compressImage(dataUrl,maxW=1400,q=0.88){
+    return new Promise(resolve=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',q));
+      };
+      img.src=dataUrl;
+    });
+  }
+  function showImage(dataUrl){
+    currentImg=dataUrl;
+    document.getElementById('pasteZone').classList.add('has-img');
+    document.getElementById('pasteHint').style.display='none';
+    const img=document.getElementById('previewImg');
+    img.src=dataUrl; img.style.display='block';
+    document.getElementById('clearImgBtn').style.display='block';
+  }
+  function clearImage(e){
+    e&&e.stopPropagation();
+    currentImg=null;
+    document.getElementById('pasteZone').classList.remove('has-img');
+    document.getElementById('pasteHint').style.display='';
+    const img=document.getElementById('previewImg');
+    img.src=''; img.style.display='none';
+    document.getElementById('clearImgBtn').style.display='none';
+  }
+  function triggerFileInput(){ if(!currentImg) document.getElementById('fileInput').click(); }
+  function handleFile(e){
+    const file=e.target.files[0];
+    if(!file||!file.type.startsWith('image/')) return;
+    const reader=new FileReader();
+    reader.onload=async ev=>{ showImage(await compressImage(ev.target.result)); };
+    reader.readAsDataURL(file);
+    e.target.value='';
+  }
+  document.addEventListener('paste',async e=>{
+    if(!document.getElementById('modalBg').classList.contains('show')) return;
+    const items=e.clipboardData?.items;
+    if(!items) return;
+    for(const item of items){
+      if(item.type.startsWith('image/')){
+        const reader=new FileReader();
+        reader.onload=async ev=>{ showImage(await compressImage(ev.target.result)); };
+        reader.readAsDataURL(item.getAsFile());
+        break;
+      }
+    }
+  });
+  const pz=document.getElementById('pasteZone');
+  pz.addEventListener('dragover',e=>{e.preventDefault();pz.classList.add('drag');});
+  pz.addEventListener('dragleave',()=>pz.classList.remove('drag'));
+  pz.addEventListener('drop',e=>{
+    e.preventDefault();pz.classList.remove('drag');
+    const file=e.dataTransfer.files[0];
+    if(!file||!file.type.startsWith('image/')) return;
+    const reader=new FileReader();
+    reader.onload=async ev=>{ showImage(await compressImage(ev.target.result)); };
+    reader.readAsDataURL(file);
+  });
+
+  // ── 모달 ──
+  function openModal(){
+    editId=null; currentImg=null; currentDir='long';
+    document.getElementById('modalTitle').textContent='새 차트 분석';
+    ['f_ticker','f_entry','f_target','f_stop','f_tvurl','f_memo','f_tags'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f_date').value=new Date().toISOString().slice(0,10);
+    setDir('long'); clearImage();
+    document.getElementById('rrPreview').style.display='none';
+    document.getElementById('modalBg').classList.add('show');
+  }
+  function openEdit(id){
+    const c=charts.find(x=>x.id===id); if(!c) return;
+    editId=id; currentDir=c.direction; currentImg=c.imageData||null;
+    document.getElementById('modalTitle').textContent='차트 분석 수정';
+    document.getElementById('f_ticker').value=c.ticker||'';
+    document.getElementById('f_entry').value=c.entry||'';
+    document.getElementById('f_target').value=c.target||'';
+    document.getElementById('f_stop').value=c.stop||'';
+    document.getElementById('f_tvurl').value=c.tvurl||'';
+    document.getElementById('f_memo').value=c.memo||'';
+    document.getElementById('f_tags').value=c.tags||'';
+    document.getElementById('f_date').value=c.date||'';
+    setDir(c.direction);
+    if(c.imageData) showImage(c.imageData); else clearImage();
+    calcRR();
+    document.getElementById('modalBg').classList.add('show');
+  }
+  function closeModal(){ document.getElementById('modalBg').classList.remove('show'); }
+
+  // ── 저장 ──
+  function saveCard(){
+    const ticker=document.getElementById('f_ticker').value.trim().toUpperCase();
+    if(!ticker){document.getElementById('f_ticker').focus();return;}
+    const data={
+      id:editId||uid(), ticker, direction:currentDir,
+      entry:document.getElementById('f_entry').value,
+      target:document.getElementById('f_target').value,
+      stop:document.getElementById('f_stop').value,
+      tvurl:document.getElementById('f_tvurl').value.trim(),
+      memo:document.getElementById('f_memo').value.trim(),
+      tags:document.getElementById('f_tags').value.trim(),
+      date:document.getElementById('f_date').value,
+      imageData:currentImg,
+    };
+    if(editId){ const i=charts.findIndex(x=>x.id===editId); if(i>=0) charts[i]=data; }
+    else charts.push(data);
+    save(); closeModal(); renderStats(); renderCards();
+  }
+
+  // ── 삭제 ──
+  function delCard(id){
+    if(!confirm('이 차트 분석을 삭제할까요?')) return;
+    charts=charts.filter(x=>x.id!==id);
+    save(); renderStats(); renderCards();
+  }
+
+  // ── 이미지 전체화면 ──
+  function openImgModal(id){
+    const c=charts.find(x=>x.id===id);
+    if(!c?.imageData) return;
+    document.getElementById('imgModalImg').src=c.imageData;
+    document.getElementById('imgModalBg').classList.add('show');
+  }
+  function closeImgModal(){ document.getElementById('imgModalBg').classList.remove('show'); }
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ closeModal(); closeImgModal(); }
+  });
+
+  // ── 빠른 입력 ──
+  let qiDir = 'long';
+  function qiSetDir(d){
+    qiDir = d;
+    document.getElementById('qi_long').className  = 'qi-dir-btn' + (d==='long'  ? ' q-long'  : '');
+    document.getElementById('qi_short').className = 'qi-dir-btn' + (d==='short' ? ' q-short' : '');
+  }
+  function qiClear(){
+    ['qi_ticker','qi_entry','qi_target','qi_stop'].forEach(id=>document.getElementById(id).value='');
+    qiSetDir('long');
+  }
+  function quickSave(){
+    const ticker = document.getElementById('qi_ticker').value.trim().toUpperCase();
+    if(!ticker){ document.getElementById('qi_ticker').focus(); return; }
+    const data = {
+      id: uid(), ticker, direction: qiDir,
+      entry:  document.getElementById('qi_entry').value,
+      target: document.getElementById('qi_target').value,
+      stop:   document.getElementById('qi_stop').value,
+      tvurl:'', memo:'', tags:'',
+      date: new Date().toISOString().slice(0,10),
+      imageData: null,
+    };
+    charts.push(data);
+    save(); renderStats(); renderCards();
+    qiClear();
+    document.getElementById('qi_ticker').focus();
+  }
+  function quickToDetail(){
+    openModal();
+    const ticker = document.getElementById('qi_ticker').value.trim().toUpperCase();
+    if(ticker) document.getElementById('f_ticker').value = ticker;
+    const entry  = document.getElementById('qi_entry').value;
+    const target = document.getElementById('qi_target').value;
+    const stop   = document.getElementById('qi_stop').value;
+    if(entry)  document.getElementById('f_entry').value  = entry;
+    if(target) document.getElementById('f_target').value = target;
+    if(stop)   document.getElementById('f_stop').value   = stop;
+    setDir(qiDir);
+    calcRR();
+  }
+
+  // ── 초기화 ──
+  renderStats();
+  renderCards();
+</script>
+</body>
+</html>
