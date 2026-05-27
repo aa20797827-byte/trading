@@ -373,6 +373,57 @@
   .sel-chart-wrap{margin-top:28px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 20px;text-align:left;}
   .sel-chart-hd{font-size:11px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.8px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
 
+  /* ── 커뮤니티 오버레이 ── */
+  .comm-ov{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.8);
+    backdrop-filter:blur(8px);
+    z-index:400;
+    display:none;align-items:flex-start;justify-content:center;
+    overflow-y:auto;padding:24px 16px 48px;
+  }
+  .comm-ov.open{display:flex;}
+  .comm-box{
+    background:linear-gradient(160deg,#0d1520 0%,#111827 100%);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:20px;
+    padding:30px 28px 32px;
+    max-width:680px;width:100%;
+    margin-top:16px;position:relative;
+  }
+  .comm-close{
+    position:absolute;top:16px;right:16px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+    color:#8b949e;border-radius:8px;width:36px;height:36px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:18px;line-height:1;transition:all .15s;
+    font-family:inherit;
+  }
+  .comm-close:hover{background:rgba(248,81,73,.15);color:#f85149;border-color:rgba(248,81,73,.3);}
+  .comm-title{font-size:22px;font-weight:900;color:#e8edf5;margin-bottom:4px;letter-spacing:-.4px;}
+  .comm-sub{font-size:13px;color:#6b7fa3;margin-bottom:22px;display:flex;align-items:center;gap:8px;}
+  .comm-refresh{
+    background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.25);
+    color:#58a6ff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:all .15s;
+  }
+  .comm-refresh:hover{background:rgba(88,166,255,.22);}
+  .comm-refresh:disabled{opacity:.4;cursor:default;}
+  .comm-lb{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+  .comm-chart-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 18px;margin-bottom:22px;}
+  .comm-chart-hd{font-size:11px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+  .comm-foot{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .comm-switch-btn{
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
+    color:#8b949e;border-radius:10px;padding:10px 22px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:all .2s;
+  }
+  .comm-switch-btn:hover{background:rgba(255,255,255,.1);color:#c9d1d9;}
+  @media(max-width:480px){
+    .comm-box{padding:24px 16px 28px;}
+    .comm-title{font-size:19px;}
+  }
+
   /* ═══════════════════════════════════════════════════
      📱 모바일 최적화 — 태블릿 (768px 이하)
   ═══════════════════════════════════════════════════ */
@@ -887,6 +938,32 @@
   </div>
 </div>
 
+<!-- 커뮤니티 오버레이 (로그인 상태에서 순위 확인) -->
+<div class="comm-ov" id="commOv">
+  <div class="comm-box">
+    <button class="comm-close" onclick="closeCommunity()" title="닫기">✕</button>
+    <div class="comm-title">🏆 커뮤니티 순위</div>
+    <div class="comm-sub">
+      실시간 수익률 기준
+      <button class="comm-refresh" id="commRefreshBtn" onclick="refreshCommunity()">↻ 새로고침</button>
+      <span id="commUpdatedAt" style="font-size:11px;color:#3a4f72;margin-left:4px"></span>
+    </div>
+    <!-- 순위표 -->
+    <div class="comm-lb" id="commLeaderboard">
+      <div style="padding:20px;text-align:center;color:#3a4f72;font-size:13px">로딩 중...</div>
+    </div>
+    <!-- 4인 비교 차트 -->
+    <div class="comm-chart-wrap">
+      <div class="comm-chart-hd">📈 4인 누적 수익 비교</div>
+      <div id="commChart"></div>
+    </div>
+    <div class="comm-foot">
+      <button class="comm-switch-btn" onclick="closeCommunity()">← 내 대시보드로</button>
+      <button class="comm-switch-btn" onclick="switchUser()" style="color:#f85149;border-color:rgba(248,81,73,.25)">🔄 사용자 전환</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <div>
     <div class="logo">📈 Trading Desk <span class="logo-sub">Private</span></div>
@@ -1258,11 +1335,15 @@
   function switchUser(){ localStorage.removeItem('td_active_user'); location.reload(); }
 
   // ── 리더보드 계산 (비동기 · 실시간 가격 포함) ──
-  async function buildLeaderboard(){
+  // lbId: 순위표 렌더 대상 element id
+  // chartId: 비교 차트 렌더 대상 element id
+  // clickable: 행 클릭 시 selectUser() 호출 여부
+  async function buildLeaderboard(lbId='leaderboard', chartId='compareChartSel', clickable=true){
     const USERS = ['지훈','성준','도영','기성'];
     const medals = ['🥇','🥈','🥉','4️⃣'];
     const rankClass = ['rank1','rank2','rank3',''];
-    const el = document.getElementById('leaderboard');
+    const el = document.getElementById(lbId);
+    if(!el) return;
 
     // ① 로딩 스피너 표시
     el.innerHTML =
@@ -1270,7 +1351,7 @@
       `<span style="display:inline-block;width:13px;height:13px;border:2px solid rgba(79,158,255,.18);border-top-color:#4f9eff;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></span></div>` +
       `<div style="padding:14px 18px;color:#3a4f72;font-size:12px;text-align:center">⏳ 실시간 가격 조회 중...</div>`;
 
-    // ② Firebase에서 각 사용자 데이터 읽기 (개별로 읽어 권한 문제 방지)
+    // ② Firebase에서 각 사용자 데이터 읽기
     const fbAllData = {};
     await Promise.all(USERS.map(async name=>{
       try{ const s=await db.ref('users/'+name).get(); if(s.exists()) fbAllData[name]=s.val(); }catch(e){}
@@ -1286,27 +1367,27 @@
     const tickerSet = new Set();
     userRaw.forEach(u=>u.entered.forEach(s=>tickerSet.add(s.ticker)));
 
-    // ④ Twelve Data로 현재가 병렬 조회 (CORS 허용, 프리/애프터 포함)
+    // ④ Yahoo Finance Worker로 실시간 가격 조회 (프리/애프터 포함)
     const prices = {};
-    if(tickerSet.size>0){
+    const mktState = getMarketState();
+    if(tickerSet.size > 0){
       await Promise.all([...tickerSet].map(async ticker=>{
+        // 1순위: Worker (Yahoo Finance — 프리/애프터 실시간)
         try{
-          const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
-          const r=await fetch(
-            `https://api.twelvedata.com/quote?symbol=${ticker}&prepost=true&apikey=${TWELVE_KEY}`,
-            {headers:{'Accept':'application/json'},signal:ctrl.signal});
+          const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),8000);
+          const r=await fetch(`/api/extended-price?ticker=${ticker}`, {signal:ctrl.signal});
           if(r.ok){
             const d=await r.json();
-            if(!d.code && d.close){
-              const extPrice=parseFloat(d.extended_price)||0;
-              const closePrice=parseFloat(d.close)||0;
-              // 프리/애프터장이면 extended_price 우선, 없으면 close
-              const p = extPrice>0 ? extPrice : closePrice;
-              if(p>0) prices[ticker]=p;
-            }
+            // live 가격 최우선, 장 상태별 fallback
+            let p=0;
+            if(d.live?.price>0)                                  p=d.live.price;
+            else if(mktState==='PRE'  && d.pre?.price>0)         p=d.pre.price;
+            else if(mktState==='POST' && d.post?.price>0)        p=d.post.price;
+            else if(d.regular?.price>0)                          p=d.regular.price;
+            if(p>0) prices[ticker]=p;
           }
         }catch{}
-        // Twelve Data 실패 시 Polygon.io prev day fallback
+        // 2순위: Polygon.io 전일 종가 fallback
         if(!prices[ticker]){
           try{
             const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),5000);
@@ -1325,14 +1406,12 @@
     // ⑤ 각 유저 손익 계산 (실현 + 미실현)
     const stats = userRaw.map(u=>{
       let realPnL=0, unrealPnL=0, allPcts=[];
-      // 실현 손익 (청산 매매)
       u.closed.forEach(s=>{
         const qty=parseFloat(s.qty)||1, ent=parseFloat(s.entry), cls=parseFloat(s.closePrice);
         const diff=s.direction==='long'?cls-ent:ent-cls;
         realPnL+=diff*qty;
         allPcts.push((diff/ent)*100);
       });
-      // 미실현 손익 (진입 중 · 현재가 있는 종목만)
       u.entered.forEach(s=>{
         const price=prices[s.ticker]; if(!price) return;
         const qty=parseFloat(s.qty)||1, ent=parseFloat(s.entry);
@@ -1345,7 +1424,7 @@
       return {name:u.name, totalPnL, avgPct, trades:u.closed.length, openPos:u.entered.length};
     });
 
-    // ⑥ 수익률 내림차순 정렬 (데이터 없으면 맨 뒤)
+    // ⑥ 총 손익 기준 내림차순 정렬 (avgPct null이면 맨 뒤)
     stats.sort((a,b)=>{
       if(a.avgPct===null&&b.avgPct===null) return 0;
       if(a.avgPct===null) return 1;
@@ -1365,17 +1444,18 @@
         const color=TD_COLORS[u.name]||'#8b949e';
         const parts=[];
         if(u.trades>0) parts.push(`${u.trades}회 청산`);
-        if(u.openPos>0) parts.push(`${u.openPos}개 진입`);
+        if(u.openPos>0) parts.push(`${u.openPos}개 진입 중`);
         const detail=parts.length?parts.join(' · '):'기록 없음';
+        const onclk=clickable?`onclick="selectUser('${u.name}')"` :'style="cursor:default"';
         return `
-        <div class="lb-row ${rankClass[i]}" onclick="selectUser('${u.name}')">
+        <div class="lb-row ${rankClass[i]}" ${onclk}>
           <div class="lb-rank">${medals[i]}</div>
           <div class="lb-name" style="color:${color}">${u.name}
             <div class="lb-label ${hasData?'':'lb-no-data'}">${detail}</div>
           </div>
           <div class="lb-money" style="color:${hasData?col(u.totalPnL):'#3a4a6a'}">
             ${hasData?fmtM(u.totalPnL):'—'}
-            <div class="lb-label">총 수익금</div>
+            <div class="lb-label">총 손익</div>
           </div>
           <div class="lb-pct" style="color:${hasData?col(u.avgPct):'#3a4a6a'}">
             ${hasData?fmtP(u.avgPct):'—'}
@@ -1384,7 +1464,7 @@
         </div>`;
       }).join('');
 
-    // ⑧ 예수금 입력칸 값 채우기 (HTML은 고정, 값만 업데이트)
+    // ⑧ 예수금 입력칸 값 채우기 (로그인 선택 화면 전용)
     ['지훈','성준','도영','기성'].forEach(name=>{
       const inp=document.getElementById('balInput_'+name);
       if(!inp) return;
@@ -1392,14 +1472,47 @@
       if(bal>0 && !inp.value) inp.value=bal;
     });
 
-    // ⑨ 선택 화면에 4인 비교 차트도 렌더링
-    await renderCompareChart('compareChartSel');
+    // ⑨ 4인 비교 차트
+    await renderCompareChart(chartId);
   }
 
   if(!TD_ACTIVE){
     document.getElementById('userSelOv').style.display='flex';
-    buildLeaderboard();
+    buildLeaderboard('leaderboard','compareChartSel',true);
   }
+
+  // ── 커뮤니티 오버레이 (로그인 상태에서 순위 확인) ──
+  async function openCommunity(){
+    const ov=document.getElementById('commOv');
+    ov.classList.add('open');
+    document.body.style.overflow='hidden';
+    const btn=document.getElementById('commRefreshBtn');
+    if(btn){btn.disabled=true; btn.textContent='⏳ 조회 중...';}
+    await buildLeaderboard('commLeaderboard','commChart',false);
+    const upd=document.getElementById('commUpdatedAt');
+    if(upd) upd.textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' 기준';
+    if(btn){btn.disabled=false; btn.textContent='↻ 새로고침';}
+  }
+  function closeCommunity(){
+    document.getElementById('commOv').classList.remove('open');
+    document.body.style.overflow='';
+  }
+  async function refreshCommunity(){
+    const btn=document.getElementById('commRefreshBtn');
+    if(btn){btn.disabled=true; btn.textContent='⏳ 조회 중...';}
+    await buildLeaderboard('commLeaderboard','commChart',false);
+    const upd=document.getElementById('commUpdatedAt');
+    if(upd) upd.textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' 기준';
+    if(btn){btn.disabled=false; btn.textContent='↻ 새로고침';}
+  }
+  // ESC로 닫기
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape') closeCommunity();
+  });
+  // 오버레이 바깥 클릭 닫기
+  document.getElementById('commOv').addEventListener('click',e=>{
+    if(e.target===e.currentTarget) closeCommunity();
+  });
 
   document.getElementById('hDate').textContent =
     new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
@@ -2533,8 +2646,8 @@
     document.querySelector('.logo').insertAdjacentHTML('beforeend',
       `<span class="logo-user" style="border-left-color:${c}">` +
       `<span class="logo-user-name" style="color:${c};text-shadow:0 0 14px ${c}44">${TD_ACTIVE}</span>` +
-      `<button class="hdr-btn" onclick="switchUser()" style="border-color:${c}44;color:${c};background:${c}12;font-size:13px;">` +
-        `커뮤니티` +
+      `<button class="hdr-btn" onclick="openCommunity()" style="border-color:${c}44;color:${c};background:${c}12;font-size:13px;">` +
+        `🏆 커뮤니티` +
       `</button>` +
       `</span>`
     );
