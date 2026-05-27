@@ -1065,8 +1065,29 @@
       }catch{}
     }
 
-    // ② Twelve Data — 프리/애프터장 전용 + 본장 Finnhub 실패 시 보완
-    // CORS 완전 허용, 프록시 불필요, extended_price로 프리/애프터 가격 제공
+    // ② Cloudflare Worker → Nasdaq 실시간 프리/애프터장 가격 (CORS 완전 허용)
+    if(state !== 'REGULAR'){
+      try{
+        const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),7000);
+        const r=await fetch(`/api/extended-price?ticker=${ticker}`,{signal:ctrl.signal});
+        if(r.ok){
+          const d=await r.json();
+          console.log(`[Nasdaq ExtHours ${ticker}]`, d);
+          if(state==='PRE' && d.pre?.price>0){
+            pre=d.pre.price; preChg=d.pre.pct||0;
+          }
+          if((state==='POST'||state==='CLOSED') && d.post?.price>0){
+            post=d.post.price; postChg=d.post.pct||0;
+          }
+          // 장마감 중 프리만 있으면 프리 사용
+          if(state==='CLOSED' && !post && d.pre?.price>0){
+            post=d.pre.price; postChg=d.pre.pct||0;
+          }
+        }
+      }catch{}
+    }
+
+    // ③ Twelve Data — 본장 Finnhub 실패 시 + 정규 종가 보완
     try{
       const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),7000);
       const r=await fetch(
@@ -1074,7 +1095,6 @@
         {headers:{'Accept':'application/json'},signal:ctrl.signal});
       if(r.ok){
         const d=await r.json();
-        // d.code가 있으면 오류 (429 rate limit 등)
         if(!d.code && d.close){
           const tdClose=parseFloat(d.close)||0;
           const tdPrev=parseFloat(d.previous_close)||0;
@@ -1082,32 +1102,25 @@
           const tdChgAbs=parseFloat(d.change)||0;
           const tdHigh=parseFloat(d.high)||0;
           const tdLow=parseFloat(d.low)||0;
-          const extPrice=parseFloat(d.extended_price)||0;
-          const extPct=parseFloat(d.extended_percent_change)||0;
 
           if(!prevClose && tdPrev>0) prevClose=tdPrev;
           if(!dayHigh   && tdHigh>0) dayHigh=tdHigh;
           if(!dayLow    && tdLow>0)  dayLow=tdLow;
+          if(!regular   && tdClose>0){ regular=tdClose; regularChg=tdChgPct; regularChgAbs=tdChgAbs; }
 
-          // 본장: Finnhub 성공 시 덮어쓰지 않음 / 그 외 항상 사용
-          if(!regular && tdClose>0){
-            regular=tdClose; regularChg=tdChgPct; regularChgAbs=tdChgAbs;
-          }
-          // 프리/애프터/장마감 — extended_price가 있으면 무조건 표시
+          // Nasdaq Worker 실패 시 Twelve Data extended_price 사용
+          const extPrice=parseFloat(d.extended_price)||0;
+          const extPct=parseFloat(d.extended_percent_change)||0;
           if(extPrice>0){
-            if(state==='PRE'){
-              pre=extPrice; preChg=extPct;
-            } else if(state==='POST' || state==='CLOSED'){
-              // 장마감 중에도 가장 최근 extended 가격 표시
-              post=extPrice; postChg=extPct;
-            }
+            if(state==='PRE' && !pre){ pre=extPrice; preChg=extPct; }
+            else if((state==='POST'||state==='CLOSED') && !post){ post=extPrice; postChg=extPct; }
           }
-          console.log(`[TwelveData ${ticker}]`, {regular, pre, post, extPrice, state});
+          console.log(`[TwelveData ${ticker}]`, {regular, pre, post, state});
         }
       }
     }catch{}
 
-    // ③ 최후 수단: Polygon.io 전일 집계 (모두 실패 시)
+    // ④ 최후 수단: Polygon.io 전일 집계 (모두 실패 시)
     if(!regular&&!pre&&!post){
       try{
         const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
@@ -1210,7 +1223,10 @@
         priceBlock=`<div style="padding:8px 0;color:var(--red);font-size:12px;display:flex;align-items:center;gap:6px">⚠️ 가격 조회 실패 — <button onclick="refreshPrices()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;text-decoration:underline;padding:0">다시 시도</button></div>`;
       } else {
         const si=stateInfo[q.state]||stateInfo.CLOSED;
-        const eff=q.state==='PRE'?(q.pre||q.regular):q.state==='POST'?(q.post||q.regular):q.regular;
+        // 최우선 가격: 프리장→pre, 애프터/장마감→post(있으면), 그 외→regular
+        const eff=(q.state==='PRE'&&q.pre)?q.pre
+                 :((q.state==='POST'||q.state==='CLOSED')&&q.post)?q.post
+                 :q.regular;
         const pnl=calcPnL(s,eff);
         const sign=pnl?.pnl>=0?'+':'';
         const pCls=pnl?chgCls(pnl.pnl):'pnl-zero';
@@ -1303,7 +1319,7 @@
       const state = getMarketState();
       let eff = cache.regular||0;
       if(state==='PRE'  && cache.pre)  eff=cache.pre;
-      if(state==='POST' && cache.post) eff=cache.post;
+      else if((state==='POST'||state==='CLOSED') && cache.post) eff=cache.post;
       if(!eff) return;
       const r = calcPnL(s, eff);
       if(!r) return;
