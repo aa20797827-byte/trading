@@ -916,8 +916,8 @@
       연결 중...
     </span>
     <!-- 가격 갱신 -->
-    <button onclick="refreshPrices()" id="refreshBtn" class="hdr-icon-btn" title="가격 갱신">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+    <button onclick="refreshPrices()" id="refreshBtn" class="hdr-icon-btn" title="가격 갱신" style="font-size:18px;">
+      ↻
     </button>
     <!-- 테마 토글 -->
     <button class="hdr-icon-btn" id="themeBtn" onclick="toggleTheme()" title="테마 변경">
@@ -1721,9 +1721,9 @@
   // 수동 갱신 (버튼 클릭)
   async function refreshPrices(){
     const btn=document.getElementById('refreshBtn');
-    btn.disabled=true; btn.textContent='🔄 갱신 중...';
+    btn.disabled=true; btn.style.opacity='.4';
     await doRefresh();
-    btn.disabled=false; btn.textContent='🔄 가격 갱신';
+    btn.disabled=false; btn.style.opacity='';
   }
 
   // 공통 갱신 로직
@@ -2529,9 +2529,8 @@
     document.querySelector('.logo').insertAdjacentHTML('beforeend',
       `<span class="logo-user" style="border-left-color:${c}">` +
       `<span class="logo-user-name" style="color:${c};text-shadow:0 0 14px ${c}44">${TD_ACTIVE}</span>` +
-      `<button class="hdr-btn" onclick="switchUser()" style="border-color:${c}44;color:${c};background:${c}12;font-size:13px;gap:6px;">` +
-        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="flex-shrink:0"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>` +
-        `<span class="hdr-comm-txt">커뮤니티</span>` +
+      `<button class="hdr-btn" onclick="switchUser()" style="border-color:${c}44;color:${c};background:${c}12;font-size:13px;">` +
+        `커뮤니티` +
       `</button>` +
       `</span>`
     );
