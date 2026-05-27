@@ -489,6 +489,189 @@
     .user-sel-grid{grid-template-columns:1fr;}
     .lb-row{grid-template-columns:18px 1fr 60px 60px;padding:9px 10px;}
   }
+
+  /* ═══════════════════════════════════════════════════
+     📱 바텀 GNB + 모바일 페이지 탭 구조
+  ═══════════════════════════════════════════════════ */
+
+  /* 데스크탑: mob-page는 그냥 block 박스 (레이아웃 무영향) */
+  .mob-page { display: block; }
+  .mob-gnb  { display: none; }
+
+  @media (max-width: 768px) {
+
+    /* ── 헤더 모바일 ── */
+    header {
+      padding: 10px 14px !important;
+      position: sticky; top: 0; z-index: 100;
+    }
+    header .mh { display: none; }
+    header > div:last-child > a { display: none; } /* 패턴분석, 차트연구실 숨김 */
+    #wsStatus { font-size: 10px !important; max-width: 90px; overflow: hidden;
+      white-space: nowrap; text-overflow: ellipsis; }
+    #refreshBtn { font-size: 11px !important; }
+    #hDate { display: none; }
+
+    /* ── 모바일 main ── */
+    .main {
+      padding: 0 !important;
+      max-width: 100% !important;
+      /* GNB 높이 + safe-area 만큼 하단 공간 확보 */
+      padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* ── 모바일 페이지 탭 ── */
+    .mob-page {
+      display: none;
+      padding: 14px 14px 24px;
+      min-height: calc(100dvh - 56px - 60px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .mob-page.mob-active { display: block; }
+
+    /* 포지션 탭에서는 pos-section 항상 보이게 */
+    #mp-position .pos-section { display: block !important; }
+    /* 데스크탑용 디바이더 숨기기 */
+    .mob-page > .divider { margin: 20px 0 !important; }
+
+    /* ── 바텀 GNB ── */
+    .mob-gnb {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      z-index: 150;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-shadow: 0 -4px 20px rgba(0,0,0,.35);
+    }
+
+    .gnb-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      position: relative;
+      transition: color .15s;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 58px;
+    }
+    .gnb-btn.gnb-active { color: var(--blue); }
+
+    .gnb-icon {
+      font-size: 21px;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+    .gnb-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .2px;
+      line-height: 1;
+    }
+
+    /* 뱃지 (숫자 표시) */
+    .gnb-badge {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(6px);
+      background: var(--red);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 5px;
+      min-width: 16px;
+      text-align: center;
+      line-height: 14px;
+      display: none;
+      border: 1.5px solid var(--bg);
+    }
+    .gnb-badge.show { display: block; }
+
+    /* 중앙 ➕ 버튼 (특별 스타일) */
+    .gnb-center .gnb-fab {
+      width: 50px; height: 50px;
+      background: var(--blue);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin-bottom: 3px;
+      margin-top: -18px;
+      box-shadow: 0 4px 16px rgba(88,166,255,.45);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .gnb-center.gnb-active .gnb-fab,
+    .gnb-center .gnb-fab:active {
+      transform: scale(.94);
+      box-shadow: 0 2px 8px rgba(88,166,255,.3);
+    }
+    .gnb-center .gnb-icon { display: none; }
+
+    /* ── 홈 페이지 카드 간격 ── */
+    #mp-home .pnl-banner { margin-bottom: 12px; }
+    #mp-home .stats { margin-bottom: 0; }
+    #mp-home #balanceSection {
+      border-radius: 14px !important;
+      margin-bottom: 12px !important;
+      padding: 14px 16px !important;
+    }
+
+    /* ── 포지션 페이지 ── */
+    #mp-position .pos-section {
+      border-radius: 12px;
+      margin-bottom: 0;
+    }
+    /* 포지션 없을 때 빈 상태 */
+    #mp-position .pos-grid:empty::after {
+      content: '진입 중인 포지션이 없습니다';
+      display: block;
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ── 입력 페이지 ── */
+    #mp-input .quick { border-radius: 14px; }
+    #mp-input .quick-row { flex-direction: column; gap: 10px; }
+    #mp-input .qi-ticker,
+    #mp-input .qi-dir,
+    #mp-input .qi-num,
+    #mp-input .qi-memo { width: 100%; min-width: unset; min-height: 50px; font-size: 16px; }
+    #mp-input .btn-add { width: 100%; min-height: 54px; font-size: 15px; border-radius: 12px; margin-top: 4px; }
+    #mp-input .type-toggle { flex-wrap: nowrap; }
+    #mp-input .tt-btn { font-size: 11px; padding: 6px 10px; }
+
+    /* ── 시나리오 페이지 ── */
+    #mp-scenario .sec-hd { flex-wrap: wrap; gap: 10px; }
+    #mp-scenario .sec-right { width: 100%; display: flex; gap: 8px; }
+    #mp-scenario .si { flex: 1; min-height: 44px; }
+    #mp-scenario .cards { grid-template-columns: 1fr; gap: 12px; }
+
+    /* ── 내역 페이지 ── */
+    #mp-history .h-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; }
+    #mp-history .h-table { min-width: 600px; }
+    #mp-history .history-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  }
+
+  /* ── 소형 iPhone (390px 이하) ── */
+  @media (max-width: 390px) {
+    #mp-home .pnl-banner { grid-template-columns: 1fr 1fr; }
+    #mp-home .pnl-card-val { font-size: 18px; }
+    #mp-home .stats { grid-template-columns: repeat(2, 1fr); }
+    .gnb-label { font-size: 9px; }
+    .gnb-icon { font-size: 19px; }
+  }
   </style>
 </head>
 <body>
@@ -589,104 +772,124 @@
 
 <div class="main">
 
-  <!-- 현재 포지션 -->
-  <div class="pos-section" id="posSection">
-    <div class="pos-sec-title">
-      <div class="pulse"></div>
-      현재 진입 중인 포지션
-      <span id="posCnt" style="color:var(--muted);font-size:11px;font-weight:400"></span>
-      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="lastUpdate"></span>
+  <!-- ══════════════════════════════════════════════
+       📱 모바일 탭 1: 포지션 (DOM 순서 = 데스크탑 순서 ①)
+  ══════════════════════════════════════════════ -->
+  <div class="mob-page" id="mp-position">
+    <!-- 현재 포지션 -->
+    <div class="pos-section" id="posSection">
+      <div class="pos-sec-title">
+        <div class="pulse"></div>
+        현재 진입 중인 포지션
+        <span id="posCnt" style="color:var(--muted);font-size:11px;font-weight:400"></span>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="lastUpdate"></span>
+      </div>
+      <div class="pos-grid" id="posGrid"></div>
     </div>
-    <div class="pos-grid" id="posGrid"></div>
   </div>
 
-  <!-- 빠른 입력 -->
-  <div class="quick">
-    <div class="quick-top">
-      <div class="quick-label">⚡ 빠른 입력</div>
-      <div class="type-toggle">
-        <button class="tt-btn on-watch" id="ttWatch" onclick="setMode('watch')">📋 시나리오 관망</button>
-        <button class="tt-btn" id="ttEnter" onclick="setMode('enter')">✅ 포지션 진입</button>
+  <!-- ══════════════════════════════════════════════
+       📱 모바일 탭 2: 빠른입력 (DOM 순서 = 데스크탑 순서 ②)
+  ══════════════════════════════════════════════ -->
+  <div class="mob-page" id="mp-input">
+    <div class="quick">
+      <div class="quick-top">
+        <div class="quick-label">⚡ 빠른 입력</div>
+        <div class="type-toggle">
+          <button class="tt-btn on-watch" id="ttWatch" onclick="setMode('watch')">📋 시나리오 관망</button>
+          <button class="tt-btn" id="ttEnter" onclick="setMode('enter')">✅ 포지션 진입</button>
+        </div>
+      </div>
+      <div class="quick-row">
+        <input class="qi qi-ticker" id="qi_ticker" placeholder="AAPL" maxlength="10"/>
+        <select class="qi qi-dir" id="qi_dir">
+          <option value="long">LONG</option>
+          <option value="short">SHORT</option>
+        </select>
+        <input class="qi qi-num" id="qi_entry"  type="number" placeholder="진입가 $" step="0.01"/>
+        <input class="qi qi-num" id="qi_target" type="number" placeholder="목표가 $" step="0.01"/>
+        <input class="qi qi-num" id="qi_stop"   type="number" placeholder="손절가 $" step="0.01"/>
+        <input class="qi qi-num" id="qi_qty"    type="number" placeholder="수량" step="1" min="0"/>
+        <input class="qi qi-memo" id="qi_memo" placeholder="진입 근거 / 메모"/>
+        <button class="btn-add mode-watch" id="addBtn" onclick="quickAdd()">➕ 관망 추가</button>
+      </div>
+      <div class="quick-hint" id="quickHint">📋 시나리오 관망 모드 — 티커만 입력해도 추가됩니다 · Enter 키 사용 가능</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       📱 모바일 탭 3: 홈 / 대시보드 (DOM 순서 = 데스크탑 순서 ③)
+  ══════════════════════════════════════════════ -->
+  <div class="mob-page" id="mp-home">
+    <!-- 예수금 -->
+    <div id="balanceSection" style="background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.35);border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#58a6ff;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">💵 예수금 잔액</div>
+        <div id="balanceDisplay" style="font-size:24px;font-weight:900;color:#58a6ff;">미설정</div>
+        <div id="balancePct" style="font-size:12px;color:#8b949e;margin-top:2px;">클릭하여 예수금을 설정하세요</div>
+      </div>
+      <button onclick="setBalance()" style="background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.4);color:#58a6ff;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;">✏️ 수정</button>
+    </div>
+    <!-- 총합 손익 배너 -->
+    <div class="pnl-banner" id="pnlBanner"></div>
+    <!-- 카운트 통계 -->
+    <div class="stats" id="statsRow"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       📱 모바일 탭 4: 시나리오 (DOM 순서 = 데스크탑 순서 ④)
+  ══════════════════════════════════════════════ -->
+  <div class="mob-page" id="mp-scenario">
+    <div class="sec-hd">
+      <div class="sec-title">📋 매매 시나리오 <span class="sec-cnt" id="sCnt">0</span>
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">관망 중인 종목</span>
+      </div>
+      <div class="sec-right">
+        <input class="si" id="sSearch" placeholder="🔍 종목 검색" oninput="renderScenarios()"/>
+        <button class="btn btn-outline" onclick="openSModal()">＋ 추가</button>
       </div>
     </div>
-    <div class="quick-row">
-      <input class="qi qi-ticker" id="qi_ticker" placeholder="AAPL" maxlength="10"/>
-      <select class="qi qi-dir" id="qi_dir">
-        <option value="long">LONG</option>
-        <option value="short">SHORT</option>
-      </select>
-      <input class="qi qi-num" id="qi_entry"  type="number" placeholder="진입가 $" step="0.01"/>
-      <input class="qi qi-num" id="qi_target" type="number" placeholder="목표가 $" step="0.01"/>
-      <input class="qi qi-num" id="qi_stop"   type="number" placeholder="손절가 $" step="0.01"/>
-      <input class="qi qi-num" id="qi_qty"    type="number" placeholder="수량" step="1" min="0"/>
-      <input class="qi qi-memo" id="qi_memo" placeholder="진입 근거 / 메모"/>
-      <button class="btn-add mode-watch" id="addBtn" onclick="quickAdd()">➕ 관망 추가</button>
-    </div>
-    <div class="quick-hint" id="quickHint">📋 시나리오 관망 모드 — 티커만 입력해도 추가됩니다 · Enter 키 사용 가능</div>
+    <div class="cards" id="sCards"></div>
   </div>
 
-  <!-- 예수금 섹션 (항상 표시) -->
-  <div id="balanceSection" style="background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.35);border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
-    <div>
-      <div style="font-size:11px;font-weight:700;color:#58a6ff;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">💵 예수금 잔액</div>
-      <div id="balanceDisplay" style="font-size:24px;font-weight:900;color:#58a6ff;">미설정</div>
-      <div id="balancePct" style="font-size:12px;color:#8b949e;margin-top:2px;">클릭하여 예수금을 설정하세요</div>
+  <!-- ══════════════════════════════════════════════
+       📱 모바일 탭 5: 매매내역 + 캘린더 (DOM 순서 = 데스크탑 순서 ⑤)
+  ══════════════════════════════════════════════ -->
+  <div class="mob-page" id="mp-history">
+
+    <!-- 📒 매매내역 -->
+    <div class="sec-hd">
+      <div class="sec-title">📒 매매내역 <span class="sec-cnt" id="hCnt">0</span>
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">청산 완료된 매매</span>
+      </div>
     </div>
-    <button onclick="setBalance()" style="background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.4);color:#58a6ff;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;">✏️ 수정</button>
+    <div class="history-stats" id="historyStats"></div>
+    <div class="h-wrap">
+      <table class="h-table">
+        <thead><tr>
+          <th>날짜</th><th>종목</th><th>방향</th><th>진입가</th>
+          <th>종료가</th><th>수량</th><th>수익금</th><th>수익률</th><th>결과</th><th></th>
+        </tr></thead>
+        <tbody id="hBody"></tbody>
+      </table>
+    </div>
+
+    <hr class="divider" style="margin:24px 0"/>
+
+    <!-- 📅 수익 캘린더 -->
+    <div class="sec-hd">
+      <div class="sec-title">📅 수익 캘린더
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">일별 손익 현황</span>
+      </div>
+      <div class="sec-right" style="gap:10px">
+        <button class="cal-nav-btn" onclick="calPrev()">← 이전</button>
+        <span class="cal-title-txt" id="calTitle"></span>
+        <button class="cal-nav-btn" onclick="calNext()">다음 →</button>
+      </div>
+    </div>
+    <div id="calGrid"></div>
+
   </div>
-
-  <!-- 통계 -->
-  <!-- 총합 손익 배너 -->
-  <div class="pnl-banner" id="pnlBanner"></div>
-  <!-- 카운트 통계 -->
-  <div class="stats" id="statsRow"></div>
-
-  <!-- 📋 매매 시나리오 (관망 전용) -->
-  <div class="sec-hd">
-    <div class="sec-title">📋 매매 시나리오 <span class="sec-cnt" id="sCnt">0</span>
-      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">관망 중인 종목</span>
-    </div>
-    <div class="sec-right">
-      <input class="si" id="sSearch" placeholder="🔍 종목 검색" oninput="renderScenarios()"/>
-      <button class="btn btn-outline" onclick="openSModal()">＋ 추가</button>
-    </div>
-  </div>
-  <div class="cards" id="sCards"></div>
-
-  <hr class="divider" style="margin:28px 0"/>
-
-  <!-- 📒 매매내역 (청산 완료) -->
-  <div class="sec-hd">
-    <div class="sec-title">📒 매매내역 <span class="sec-cnt" id="hCnt">0</span>
-      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">청산 완료된 매매</span>
-    </div>
-  </div>
-  <div class="history-stats" id="historyStats"></div>
-  <div class="h-wrap">
-    <table class="h-table">
-      <thead><tr>
-        <th>날짜</th><th>종목</th><th>방향</th><th>진입가</th>
-        <th>종료가</th><th>수량</th><th>수익금</th><th>수익률</th><th>결과</th><th></th>
-      </tr></thead>
-      <tbody id="hBody"></tbody>
-    </table>
-  </div>
-
-  <hr class="divider" style="margin:28px 0"/>
-
-  <!-- 📅 수익 캘린더 -->
-  <div class="sec-hd">
-    <div class="sec-title">📅 수익 캘린더
-      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">일별 손익 현황</span>
-    </div>
-    <div class="sec-right" style="gap:10px">
-      <button class="cal-nav-btn" onclick="calPrev()">← 이전</button>
-      <span class="cal-title-txt" id="calTitle"></span>
-      <button class="cal-nav-btn" onclick="calNext()">다음 →</button>
-    </div>
-  </div>
-  <div id="calGrid"></div>
-
 
 </div>
 
@@ -756,6 +959,39 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     📱 모바일 바텀 GNB
+══════════════════════════════════════════════════ -->
+<nav class="mob-gnb" id="mobGnb">
+  <!-- 홈 -->
+  <button class="gnb-btn" id="gnb-home" onclick="mobSwitch('home')">
+    <span class="gnb-icon">🏠</span>
+    <span class="gnb-label">홈</span>
+  </button>
+  <!-- 포지션 -->
+  <button class="gnb-btn" id="gnb-position" onclick="mobSwitch('position')">
+    <span class="gnb-icon">📊</span>
+    <span class="gnb-label">포지션</span>
+    <span class="gnb-badge" id="gnbPosBadge"></span>
+  </button>
+  <!-- 추가 (중앙 FAB) -->
+  <button class="gnb-btn gnb-center" id="gnb-input" onclick="mobSwitch('input')">
+    <span class="gnb-fab">➕</span>
+    <span class="gnb-label">추가</span>
+  </button>
+  <!-- 관망 -->
+  <button class="gnb-btn" id="gnb-scenario" onclick="mobSwitch('scenario')">
+    <span class="gnb-icon">📋</span>
+    <span class="gnb-label">관망</span>
+    <span class="gnb-badge" id="gnbScBadge"></span>
+  </button>
+  <!-- 내역 -->
+  <button class="gnb-btn" id="gnb-history" onclick="mobSwitch('history')">
+    <span class="gnb-icon">📒</span>
+    <span class="gnb-label">내역</span>
+  </button>
+</nav>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
@@ -775,6 +1011,51 @@
     databaseURL: "https://trading-desk-2adf7-default-rtdb.firebaseio.com"
   });
   const db = firebase.database();
+
+  // ══════════════════════════════════════════
+  // 📱 모바일 GNB 탭 전환
+  // ══════════════════════════════════════════
+  const MOB_BREAKPOINT = 768;
+
+  function mobSwitch(tab) {
+    if (window.innerWidth > MOB_BREAKPOINT) return;
+    // 모든 페이지·버튼 초기화
+    document.querySelectorAll('.mob-page').forEach(el => el.classList.remove('mob-active'));
+    document.querySelectorAll('.gnb-btn').forEach(el => el.classList.remove('gnb-active'));
+    // 대상 활성화
+    const page = document.getElementById('mp-' + tab);
+    const btn  = document.getElementById('gnb-' + tab);
+    if (page) { page.classList.add('mob-active'); page.scrollTop = 0; }
+    if (btn)  btn.classList.add('gnb-active');
+    // 마지막 탭 저장
+    localStorage.setItem('td_mob_tab', tab);
+  }
+
+  function mobInit() {
+    if (window.innerWidth > MOB_BREAKPOINT) return;
+    const saved = localStorage.getItem('td_mob_tab') || 'home';
+    mobSwitch(saved);
+  }
+
+  // GNB 뱃지 업데이트
+  function updateGnbBadges(posCnt, scCnt) {
+    if (window.innerWidth > MOB_BREAKPOINT) return;
+    const pb = document.getElementById('gnbPosBadge');
+    const sb = document.getElementById('gnbScBadge');
+    if (pb) { pb.textContent = posCnt > 0 ? posCnt : ''; pb.classList.toggle('show', posCnt > 0); }
+    if (sb) { sb.textContent = scCnt  > 0 ? scCnt  : ''; sb.classList.toggle('show', scCnt  > 0); }
+  }
+
+  // 화면 크기 변경 시 (데스크탑 → 모바일 전환) 재초기화
+  window.addEventListener('resize', () => {
+    if (window.innerWidth <= MOB_BREAKPOINT) {
+      const anyActive = document.querySelector('.mob-page.mob-active');
+      if (!anyActive) mobInit();
+    } else {
+      // 데스크탑: 모든 mob-page 표시
+      document.querySelectorAll('.mob-page').forEach(el => el.classList.remove('mob-active'));
+    }
+  });
 
   // ── 유저 선택 ──
   const TD_ACTIVE = localStorage.getItem('td_active_user')||'';
@@ -1299,7 +1580,16 @@
   function renderPositions(){
     const entered=scenarios.filter(s=>s.status==='entered');
     const sec=document.getElementById('posSection');
-    if(!entered.length){sec.classList.remove('show');return;}
+    if(!entered.length){
+      if(window.innerWidth <= 768){
+        // 모바일: 항상 섹션 표시 + 빈 상태 메시지
+        sec.classList.add('show');
+        document.getElementById('posGrid').innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📊</div><div class="empty-title">진입 중인 포지션 없음</div><div style="font-size:13px">➕ 추가 탭에서 포지션을 등록하세요</div></div>`;
+      } else {
+        sec.classList.remove('show');
+      }
+      return;
+    }
     sec.classList.add('show');
     document.getElementById('posCnt').textContent=`${entered.length}개`;
 
@@ -1972,7 +2262,18 @@
   }
   // ══════════════════════════════════════════════
 
-  function renderAll(){renderBalanceSection();renderPositions();renderStats();renderScenarios();renderHistory();renderCalendar();}
+  function renderAll(){
+    renderBalanceSection();
+    renderPositions();
+    renderStats();
+    renderScenarios();
+    renderHistory();
+    renderCalendar();
+    // 모바일 GNB 뱃지 업데이트
+    const posCnt = scenarios.filter(s=>s.status==='entered').length;
+    const scCnt  = scenarios.filter(s=>s.status==='watching').length;
+    updateGnbBadges(posCnt, scCnt);
+  }
 
   // ── 헤더 유저 배지 ──
   if(TD_ACTIVE){
@@ -2074,6 +2375,13 @@
     renderAll();
     wsConnect();
     startRestInterval();
+  }
+
+  // 📱 모바일 GNB 초기화 (DOM 로드 완료 후 실행)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mobInit);
+  } else {
+    mobInit();
   }
 
 </script>
