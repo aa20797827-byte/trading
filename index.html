@@ -678,8 +678,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
-  // ── Polygon.io API 키 (최상단 정의 필요 — 리더보드에서 사용) ──
-  const POLYGON_KEY = '_p_KVueWguRFeJSLwWOYiTLY0c636Evs';
+  // ── API 키 ──
+  const FINNHUB_KEY  = 'd8ao1f1r01qpujl2rongd8ao1f1r01qpujl2roo0'; // 본장 전용
+  const POLYGON_KEY  = '_p_KVueWguRFeJSLwWOYiTLY0c636Evs';         // 전일 fallback
 
   // ── Firebase 초기화 ──
   const _fbApp = firebase.initializeApp({
@@ -907,17 +908,94 @@
   const priceCache={};
   let quickMode = 'watch'; // 'watch' | 'enter'
 
-  // ── 가격 갱신 (Polygon.io REST — WebSocket은 무료 플랜 미지원) ──
+  // ── 가격 소스: 본장=Finnhub WS, 프리/애프터=Yahoo Finance REST ──
+  let finnhubWS = null;
+  let wsSubscribed = new Set();
+  let wsPending = new Set();
   let renderDebounce = null;
 
-  function wsConnect(){
-    // Polygon.io 무료 플랜은 WebSocket 미지원 → REST 자동 갱신으로 대체
-    document.getElementById('wsStatus').textContent='📊 REST 갱신';
-    document.getElementById('wsStatus').style.color='#58a6ff';
+  function updateWsStatus(state){
+    const el=document.getElementById('wsStatus'); if(!el)return;
+    if(state==='REGULAR_CONNECTING'){
+      el.textContent='🔗 Finnhub 연결 중...'; el.style.color='var(--muted)';
+    } else if(state==='REGULAR'){
+      el.textContent='🟢 Finnhub 실시간'; el.style.color='var(--green)';
+    } else if(state==='REGULAR_ERR'){
+      el.textContent='🔴 WS 오류 · REST 사용'; el.style.color='var(--red)';
+    } else if(state==='PRE'){
+      el.textContent='🌅 Yahoo 프리장'; el.style.color='#d29922';
+    } else if(state==='POST'){
+      el.textContent='🌙 Yahoo 애프터장'; el.style.color='#bc8cff';
+    } else {
+      el.textContent='⏸ 장마감'; el.style.color='#8b949e';
+    }
   }
 
-  function wsSubscribe(ticker){ /* REST 모드 — no-op */ }
-  function wsUnsubscribe(ticker){ /* REST 모드 — no-op */ }
+  function wsConnect(){
+    const state=getMarketState();
+    if(state !== 'REGULAR'){
+      updateWsStatus(state);
+      if(finnhubWS && finnhubWS.readyState<=1){ finnhubWS.close(); finnhubWS=null; }
+      return;
+    }
+    if(finnhubWS && finnhubWS.readyState<=1) return; // 이미 연결 중
+
+    updateWsStatus('REGULAR_CONNECTING');
+    finnhubWS = new WebSocket(`wss://ws.finnhub.io?token=${FINNHUB_KEY}`);
+
+    finnhubWS.onopen = ()=>{
+      updateWsStatus('REGULAR');
+      wsSubscribed.clear();
+      scenarios.filter(s=>s.status==='entered').forEach(s=>wsSubscribe(s.ticker));
+      wsPending.forEach(t=>wsSubscribe(t)); wsPending.clear();
+    };
+
+    finnhubWS.onmessage = (e)=>{
+      try{
+        const msg=JSON.parse(e.data);
+        if(msg.type!=='trade') return;
+        const now=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        msg.data.forEach(trade=>{
+          const ticker=trade.s, price=trade.p;
+          scenarios.filter(s=>s.status==='entered'&&s.ticker===ticker).forEach(s=>{
+            const cached=priceCache[s.id]||{regular:0,regularChg:0,regularChgAbs:0,pre:null,preChg:null,post:null,postChg:null,dayHigh:null,dayLow:null,prevClose:0};
+            const prev=cached.prevClose||0;
+            const chgAbs=price-(prev||0), chg=prev?(chgAbs/prev*100):0;
+            priceCache[s.id]={...cached, regular:price, regularChg:chg, regularChgAbs:chgAbs, state:'REGULAR', at:now};
+          });
+        });
+        clearTimeout(renderDebounce);
+        renderDebounce=setTimeout(()=>{
+          renderPositions(); renderStats();
+          document.getElementById('lastUpdate').textContent=
+            `마지막 갱신 ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+        },300);
+      }catch{}
+    };
+
+    finnhubWS.onerror = ()=>{ updateWsStatus('REGULAR_ERR'); };
+
+    finnhubWS.onclose = ()=>{
+      wsSubscribed.clear(); finnhubWS=null;
+      if(getMarketState() !== 'REGULAR') return;
+      document.getElementById('wsStatus').textContent='⚫ 재연결 중...';
+      document.getElementById('wsStatus').style.color='var(--muted)';
+      setTimeout(wsConnect, 3000);
+    };
+  }
+
+  function wsSubscribe(ticker){
+    if(!finnhubWS||finnhubWS.readyState!==WebSocket.OPEN){ wsPending.add(ticker); return; }
+    if(wsSubscribed.has(ticker)) return;
+    finnhubWS.send(JSON.stringify({type:'subscribe',symbol:ticker}));
+    wsSubscribed.add(ticker);
+  }
+
+  function wsUnsubscribe(ticker){
+    if(!finnhubWS||finnhubWS.readyState!==WebSocket.OPEN) return;
+    finnhubWS.send(JSON.stringify({type:'unsubscribe',symbol:ticker}));
+    wsSubscribed.delete(ticker);
+  }
 
   // ── 미국 동부 기준 장 상태 계산 ──
   function getMarketState(){
@@ -971,7 +1049,24 @@
     let pre=null,preChg=null,post=null,postChg=null;
     let dayHigh=null,dayLow=null,prevClose=null,dataState=state;
 
-    // ① Yahoo Finance v7 — 실시간 현재가 (프리/애프터 포함) [PRIMARY]
+    // ① 본장 (9:30~16:00 ET): Finnhub REST — 정확한 실시간 종가·등락률
+    if(state==='REGULAR'){
+      try{
+        const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
+        const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_KEY}`,
+          {headers:{'Accept':'application/json'},signal:ctrl.signal});
+        if(r.ok){
+          const d=await r.json();
+          console.log(`[Finnhub REST ${ticker}]`, {c:d.c, pc:d.pc, dp:d.dp});
+          if(d.c>0){
+            prevClose=d.pc||0; dayHigh=d.h||0; dayLow=d.l||0;
+            regular=d.c; regularChg=d.dp||0; regularChgAbs=d.d||0;
+          }
+        }
+      }catch{}
+    }
+
+    // ② Yahoo Finance — 프리/애프터장 전용 + 본장 Finnhub 실패 시 보완
     const fields='regularMarketPrice,regularMarketChangePercent,regularMarketChange,regularMarketDayHigh,regularMarketDayLow,preMarketPrice,preMarketChangePercent,postMarketPrice,postMarketChangePercent,previousClose,marketState';
     const yq1=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
     const yq2=`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
@@ -980,7 +1075,6 @@
       `https://corsproxy.io/?url=${encodeURIComponent(yq1)}`,
       `https://api.allorigins.win/raw?url=${encodeURIComponent(yq1)}`,
       `https://corsproxy.io/?url=${encodeURIComponent(yq2)}`,
-      `https://thingproxy.freeboard.io/fetch/${yq1}`,
     ];
     for(const url of yfUrls){
       try{
@@ -991,18 +1085,21 @@
         const q=d?.quoteResponse?.result?.[0];
         if(!q)continue;
 
-        prevClose=q.previousClose||0;
-        dayHigh=q.regularMarketDayHigh||null;
-        dayLow=q.regularMarketDayLow||null;
-        if(q.regularMarketPrice){
+        if(!prevClose) prevClose=q.previousClose||0;
+        if(!dayHigh)   dayHigh=q.regularMarketDayHigh||null;
+        if(!dayLow)    dayLow=q.regularMarketDayLow||null;
+        // 본장이면 Finnhub 성공 시 regular는 덮어쓰지 않음, 실패 시에만 Yahoo로 보완
+        if(!regular&&q.regularMarketPrice){
           regular=q.regularMarketPrice;
           regularChg=q.regularMarketChangePercent||0;
           regularChgAbs=q.regularMarketChange||0;
         }
+        // 프리장 가격
         if(q.preMarketPrice&&q.preMarketPrice>0){
           pre=q.preMarketPrice;
           preChg=q.preMarketChangePercent||null;
         }
+        // 애프터장 가격
         if(q.postMarketPrice&&q.postMarketPrice>0){
           post=q.postMarketPrice;
           postChg=regular?((post-regular)/regular*100):null;
@@ -1013,8 +1110,8 @@
       }catch{continue;}
     }
 
-    // ② Polygon.io prev day — Yahoo 실패 시 전일 종가 fallback
-    if(!regular){
+    // ③ 최후 수단: Polygon.io 전일 집계 (모두 실패 시)
+    if(!regular&&!pre&&!post){
       try{
         const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
         const r=await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?apiKey=${POLYGON_KEY}`,
@@ -1022,13 +1119,11 @@
         if(r.ok){
           const d=await r.json();
           const res=d?.results?.[0];
-          console.log(`[Polygon prev ${ticker}]`, res);
           if(res){
             if(!prevClose) prevClose=res.c||0;
             if(!dayHigh)   dayHigh=res.h||0;
             if(!dayLow)    dayLow=res.l||0;
-            regular=res.c||0; // 전일 종가 (최후 수단)
-            regularChg=0; regularChgAbs=0;
+            regular=res.c||0; regularChg=0; regularChgAbs=0;
           }
         }
       }catch{}
@@ -1790,14 +1885,51 @@
 
   // ── REST interval 정의 ──
   let restInterval=null;
+  let _lastKnownState = null;
+
   function startRestInterval(){
     if(restInterval) clearInterval(restInterval);
-    restInterval=setInterval(()=>{
+    const state=getMarketState();
+    _lastKnownState=state;
+
+    if(state==='CLOSED'){
+      // 장마감: 자동 폴링 중단, 마지막 가격 유지
+      restInterval=null;
+      return;
+    }
+
+    // 본장 30초 | 프리·애프터 60초
+    const interval = state==='REGULAR' ? 30000 : 60000;
+
+    restInterval=setInterval(async()=>{
       if(!scenarios.some(s=>s.status==='entered')) return;
-      doRefresh();
-    }, 15000);
+      const curState=getMarketState();
+
+      // 장 상태 변경 감지 → 인터벌 재시작 + WS 관리
+      if(curState !== _lastKnownState){
+        if(curState==='REGULAR') wsConnect();
+        else if(finnhubWS && finnhubWS.readyState<=1){ finnhubWS.close(); finnhubWS=null; updateWsStatus(curState); }
+        startRestInterval(); return;
+      }
+
+      // 본장 + Finnhub WS 실시간 연결됨: REST 불필요 (WS가 처리)
+      if(curState==='REGULAR' && finnhubWS && finnhubWS.readyState===WebSocket.OPEN) return;
+
+      await doRefresh();
+    }, interval);
   }
-  setInterval(()=>{if(!restInterval) startRestInterval();},15000);
+
+  // 1분마다 장 상태 감시 — 개장·마감 자동 전환
+  setInterval(()=>{
+    const state=getMarketState();
+    if(state==='REGULAR'){
+      if(!finnhubWS || finnhubWS.readyState > 1) wsConnect();
+    } else {
+      updateWsStatus(state);
+      if(finnhubWS && finnhubWS.readyState<=1){ finnhubWS.close(); finnhubWS=null; }
+    }
+    if(state !== _lastKnownState) startRestInterval();
+  }, 60000);
 
   // ── Firebase 실시간 동기화 & 초기 실행 ──
   if(TD_ACTIVE){
