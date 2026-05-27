@@ -679,8 +679,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
   // ── API 키 ──
-  const FINNHUB_KEY  = 'd8ao1f1r01qpujl2rongd8ao1f1r01qpujl2roo0'; // 본장 전용
-  const POLYGON_KEY  = '_p_KVueWguRFeJSLwWOYiTLY0c636Evs';         // 전일 fallback
+  const FINNHUB_KEY  = 'd8ao1f1r01qpujl2rongd8ao1f1r01qpujl2roo0'; // 본장 WS
+  const TWELVE_KEY   = 'demo';                                       // 프리/애프터 (CORS 완전 허용)
+  const POLYGON_KEY  = '_p_KVueWguRFeJSLwWOYiTLY0c636Evs';         // 전일 최후 fallback
 
   // ── Firebase 초기화 ──
   const _fbApp = firebase.initializeApp({
@@ -730,29 +731,27 @@
     const tickerSet = new Set();
     userRaw.forEach(u=>u.entered.forEach(s=>tickerSet.add(s.ticker)));
 
-    // ④ Yahoo Finance + Polygon.io prev day로 현재가 병렬 조회
+    // ④ Twelve Data로 현재가 병렬 조회 (CORS 허용, 프리/애프터 포함)
     const prices = {};
     if(tickerSet.size>0){
       await Promise.all([...tickerSet].map(async ticker=>{
-        // Yahoo Finance 시도
-        const fields='regularMarketPrice';
-        const yUrl=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
-        const proxies=[
-          yUrl,
-          `https://corsproxy.io/?url=${encodeURIComponent(yUrl)}`,
-          `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
-        ];
-        for(const url of proxies){
-          try{
-            const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
-            const r=await fetch(url,{signal:ctrl.signal});
-            if(!r.ok)continue;
+        try{
+          const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
+          const r=await fetch(
+            `https://api.twelvedata.com/quote?symbol=${ticker}&prepost=true&apikey=${TWELVE_KEY}`,
+            {headers:{'Accept':'application/json'},signal:ctrl.signal});
+          if(r.ok){
             const d=await r.json();
-            const p=d?.quoteResponse?.result?.[0]?.regularMarketPrice;
-            if(p>0){ prices[ticker]=p; break; }
-          }catch{}
-        }
-        // Yahoo 실패 시 Polygon.io prev day fallback
+            if(!d.code && d.close){
+              const extPrice=parseFloat(d.extended_price)||0;
+              const closePrice=parseFloat(d.close)||0;
+              // 프리/애프터장이면 extended_price 우선, 없으면 close
+              const p = extPrice>0 ? extPrice : closePrice;
+              if(p>0) prices[ticker]=p;
+            }
+          }
+        }catch{}
+        // Twelve Data 실패 시 Polygon.io prev day fallback
         if(!prices[ticker]){
           try{
             const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),5000);
@@ -1066,49 +1065,46 @@
       }catch{}
     }
 
-    // ② Yahoo Finance — 프리/애프터장 전용 + 본장 Finnhub 실패 시 보완
-    const fields='regularMarketPrice,regularMarketChangePercent,regularMarketChange,regularMarketDayHigh,regularMarketDayLow,preMarketPrice,preMarketChangePercent,postMarketPrice,postMarketChangePercent,previousClose,marketState';
-    const yq1=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
-    const yq2=`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
-    const yfUrls=[
-      yq1, yq2,
-      `https://corsproxy.io/?url=${encodeURIComponent(yq1)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(yq1)}`,
-      `https://corsproxy.io/?url=${encodeURIComponent(yq2)}`,
-    ];
-    for(const url of yfUrls){
-      try{
-        const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),7000);
-        const r=await fetch(url,{headers:{'Accept':'application/json'},signal:ctrl.signal});
-        if(!r.ok)continue;
+    // ② Twelve Data — 프리/애프터장 전용 + 본장 Finnhub 실패 시 보완
+    // CORS 완전 허용, 프록시 불필요, extended_price로 프리/애프터 가격 제공
+    try{
+      const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),7000);
+      const r=await fetch(
+        `https://api.twelvedata.com/quote?symbol=${ticker}&prepost=true&apikey=${TWELVE_KEY}`,
+        {headers:{'Accept':'application/json'},signal:ctrl.signal});
+      if(r.ok){
         const d=await r.json();
-        const q=d?.quoteResponse?.result?.[0];
-        if(!q)continue;
+        // d.code가 있으면 오류 (429 rate limit 등)
+        if(!d.code && d.close){
+          const tdClose=parseFloat(d.close)||0;
+          const tdPrev=parseFloat(d.previous_close)||0;
+          const tdChgPct=parseFloat(d.percent_change)||0;
+          const tdChgAbs=parseFloat(d.change)||0;
+          const tdHigh=parseFloat(d.high)||0;
+          const tdLow=parseFloat(d.low)||0;
+          const extPrice=parseFloat(d.extended_price)||0;
+          const extPct=parseFloat(d.extended_percent_change)||0;
 
-        if(!prevClose) prevClose=q.previousClose||0;
-        if(!dayHigh)   dayHigh=q.regularMarketDayHigh||null;
-        if(!dayLow)    dayLow=q.regularMarketDayLow||null;
-        // 본장이면 Finnhub 성공 시 regular는 덮어쓰지 않음, 실패 시에만 Yahoo로 보완
-        if(!regular&&q.regularMarketPrice){
-          regular=q.regularMarketPrice;
-          regularChg=q.regularMarketChangePercent||0;
-          regularChgAbs=q.regularMarketChange||0;
+          if(!prevClose && tdPrev>0) prevClose=tdPrev;
+          if(!dayHigh   && tdHigh>0) dayHigh=tdHigh;
+          if(!dayLow    && tdLow>0)  dayLow=tdLow;
+
+          // 본장: Finnhub 성공 시 덮어쓰지 않음
+          if(!regular && tdClose>0){
+            regular=tdClose; regularChg=tdChgPct; regularChgAbs=tdChgAbs;
+          }
+          // 프리/애프터 가격
+          if(extPrice>0){
+            if(state==='PRE'){
+              pre=extPrice; preChg=extPct;
+            } else if(state==='POST'){
+              post=extPrice; postChg=extPct;
+            }
+          }
+          console.log(`[TwelveData ${ticker}]`, {regular, pre, post, extPrice, state});
         }
-        // 프리장 가격
-        if(q.preMarketPrice&&q.preMarketPrice>0){
-          pre=q.preMarketPrice;
-          preChg=q.preMarketChangePercent||null;
-        }
-        // 애프터장 가격
-        if(q.postMarketPrice&&q.postMarketPrice>0){
-          post=q.postMarketPrice;
-          postChg=regular?((post-regular)/regular*100):null;
-        }
-        if(q.marketState) dataState=q.marketState;
-        console.log(`[Yahoo ${ticker}]`, {regular, pre, post, state:dataState});
-        break;
-      }catch{continue;}
-    }
+      }
+    }catch{}
 
     // ③ 최후 수단: Polygon.io 전일 집계 (모두 실패 시)
     if(!regular&&!pre&&!post){
