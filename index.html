@@ -1190,14 +1190,11 @@
   }
   function _updateThemeBtn(theme){
     const ico = document.getElementById('themeIco');
-    const txt = document.getElementById('themeTxt');
     if(!ico) return;
     if(theme==='light'){
       ico.innerHTML=`<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/><circle cx="12" cy="12" r="5"/>`;
-      if(txt) txt.textContent='나이트';
     } else {
       ico.innerHTML=`<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>`;
-      if(txt) txt.textContent='라이트';
     }
   }
   // 초기 테마 적용 (즉시 실행)
@@ -1461,7 +1458,7 @@
     }
   }
 
-  let editSId=null, sFilter='all', closeTarget=null;
+  let editSId=null, closeTarget=null;
   const priceCache={};
   let quickMode = 'watch'; // 'watch' | 'enter'
 
@@ -1540,8 +1537,7 @@
     finnhubWS.onclose = ()=>{
       wsSubscribed.clear(); finnhubWS=null;
       if(getMarketState() !== 'REGULAR') return;
-      document.getElementById('wsStatus').textContent='⚫ 재연결 중...';
-      document.getElementById('wsStatus').style.color='var(--muted)';
+      updateWsStatus('REGULAR_CONNECTING');
       setTimeout(wsConnect, 3000);
     };
   }
@@ -1590,7 +1586,7 @@
   }
 
   // ── 필터 ──
-  function setSF(el,v){document.querySelectorAll('[data-sf]').forEach(b=>b.classList.remove('on'));el.classList.add('on');sFilter=v;renderScenarios();}
+  function setSF(el){document.querySelectorAll('[data-sf]').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderScenarios();}
 
   // ── R:R ──
   function rrCalc(e,t,s,d){
@@ -1998,7 +1994,7 @@
               <div class="card-date">${s.date}</div>
             </div>
             <div class="sc-btns">
-              <select class="status-sel ${statusBadge[s.status]}" onchange="changeStatus('${s.id}',this.value)"
+              <select class="status-sel ${statusBadge[s.status]}" onchange="changeStatus('${s.id}',this.value,this)"
                 title="상태 변경 → 진입으로 바꾸면 현재 포지션 섹션으로 이동">
                 <option value="watching"  ${s.status==='watching' ?'selected':''}>👀 관망 중</option>
                 <option value="entered"   ${s.status==='entered'  ?'selected':''}>✅ 진입 →</option>
@@ -2064,16 +2060,17 @@
       const cv=document.getElementById('cv-'+id);
       if(!cv.dataset.loaded){
         cv.dataset.loaded='1';
-        const src=`https://s.tradingview.com/widgetembed/?frameElementId=tv_${id}&symbol=${encodeURIComponent(ticker)}&interval=D&theme=dark&style=1&locale=kr&hidesidetoolbar=0&saveimage=1&withdateranges=1`;
+        const tvTheme=localStorage.getItem('td_theme')==='light'?'light':'dark';
+        const src=`https://s.tradingview.com/widgetembed/?frameElementId=tv_${id}&symbol=${encodeURIComponent(ticker)}&interval=D&theme=${tvTheme}&style=1&locale=kr&hidesidetoolbar=0&saveimage=1&withdateranges=1`;
         cv.innerHTML=`<iframe src="${src}" style="width:100%;height:420px;border:none;display:block;" allowfullscreen></iframe>`;
       }
     }
   }
 
-  function changeStatus(id,val){
+  function changeStatus(id,val,el){
     const s=scenarios.find(x=>x.id===id);
     if(!s)return;
-    if(val==='closed'&&s.status==='entered'){openCloseModal(id,'청산');event.target.value=s.status;return;}
+    if(val==='closed'&&s.status==='entered'){openCloseModal(id,'청산');if(el)el.value=s.status;return;}
     s.status=val;save();renderAll();
   }
 
@@ -2558,8 +2555,8 @@
       return;
     }
 
-    // 본장 30초 | 프리·애프터 30초 | 장마감 120초
-    const interval = state==='REGULAR' ? 30000 : state==='CLOSED' ? 120000 : 30000;
+    // 본장·프리·애프터 30초 (CLOSED는 위에서 early return)
+    const interval = 30000;
 
     restInterval=setInterval(async()=>{
       if(!scenarios.some(s=>s.status==='entered')) return;
