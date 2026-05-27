@@ -296,117 +296,198 @@
   .sel-chart-wrap{margin-top:28px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 20px;text-align:left;}
   .sel-chart-hd{font-size:11px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.8px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
 
-  /* ═══════════════════════════════════
-     📱 모바일 최적화 (768px 이하)
-  ═══════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════
+     📱 모바일 최적화 — 태블릿 (768px 이하)
+  ═══════════════════════════════════════════════════ */
   @media(max-width:768px){
     /* 헤더 */
-    header{padding:8px 14px;flex-wrap:wrap;gap:6px;}
+    header{padding:10px 16px;flex-wrap:wrap;gap:8px;}
     .mh{display:none;}
-    header>div:last-child{gap:6px;flex-wrap:wrap;}
-    header a{padding:5px 10px;font-size:11px;}
-    header>div:last-child button{font-size:11px;}
+    header>div:last-child{gap:8px;flex-wrap:wrap;}
+    header a{padding:8px 12px;font-size:12px;min-height:40px;display:flex;align-items:center;}
+    header>div:last-child button{font-size:12px;min-height:40px;padding:0 12px;}
 
     /* 메인 */
-    .main{padding:12px 14px;}
+    .main{padding:16px 16px 80px;}
 
     /* PnL 배너 */
-    .pnl-banner{grid-template-columns:repeat(2,1fr);}
+    .pnl-banner{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .pnl-card{padding:16px 18px;}
+    .pnl-card-lbl{font-size:11px;}
+    .pnl-card-val{font-size:24px;}
 
     /* 통계 */
-    .stats{grid-template-columns:repeat(3,1fr);}
+    .stats{grid-template-columns:repeat(3,1fr);gap:8px;}
+    .stat{padding:14px 12px;}
+    .stat-v{font-size:18px;}
 
     /* 섹션 헤더 */
-    .sec-hd{flex-direction:column;align-items:flex-start;gap:8px;}
+    .sec-hd{flex-direction:column;align-items:flex-start;gap:10px;}
     .sec-right{width:100%;}
-    .filter{flex-wrap:wrap;}
-    .si{width:100%;box-sizing:border-box;}
+    .filter{flex-wrap:wrap;gap:6px;}
+    .si{min-height:40px;padding:8px 12px;font-size:13px;}
 
     /* 카드 그리드 */
-    .cards{grid-template-columns:1fr;}
-    .pos-grid{grid-template-columns:1fr;}
+    .cards{grid-template-columns:1fr;gap:14px;}
+    .pos-grid{grid-template-columns:1fr;gap:14px;}
 
     /* 빠른 입력 */
-    .quick-row{flex-direction:column;}
+    .quick{padding:16px 16px;}
+    .quick-row{flex-direction:column;gap:10px;}
     .qi-ticker,.qi-dir,.qi-num,.qi-memo{width:100%;min-width:unset;}
-    .btn-add{width:100%;padding:11px;}
+    .qi{min-height:48px;font-size:15px;padding:10px 14px;}
+    .btn-add{width:100%;padding:14px;font-size:15px;min-height:52px;}
 
     /* 히스토리 테이블 */
-    .history-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    table{min-width:680px;}
+    .history-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;}
+    table{min-width:660px;}
+    td,th{padding:11px 12px;font-size:12px;}
 
     /* 예수금 섹션 */
-    #balanceSection{flex-direction:column;align-items:flex-start;gap:10px;}
-    #balanceSection button{width:100%;}
+    #balanceSection{flex-direction:column;align-items:flex-start;gap:12px;padding:16px 16px;}
+    #balanceSection button{width:100%;min-height:46px;font-size:14px;}
+    #balanceDisplay{font-size:22px;}
 
     /* 유저 선택 화면 */
-    .user-sel-box{padding:24px 16px 36px;}
+    .user-sel-box{padding:28px 18px 40px;}
     .user-sel-title{font-size:26px;}
-    .user-sel-grid{gap:10px;}
-    .user-sel-btn{padding:22px 12px;font-size:22px;}
-    .lb-row{grid-template-columns:24px 1fr 80px 80px;padding:10px 14px;}
+    .user-sel-grid{gap:12px;}
+    .user-sel-btn{padding:22px 14px;font-size:22px;}
+    .lb-row{grid-template-columns:24px 1fr 80px 80px;padding:12px 14px;}
     .lb-name{font-size:14px;}
     .lb-pct{font-size:13px;}
     .lb-money{font-size:12px;}
 
     /* 캘린더 */
-    .cal-cell{min-height:52px;padding:4px 3px;}
+    .cal-cell{min-height:56px;padding:5px 4px;}
     .cal-pnl{font-size:10px;}
     .cal-cnt{display:none;}
+
+    /* 시나리오 카드 */
+    .sc{padding:16px 16px 14px;}
+    .sc-head{padding-bottom:10px;margin-bottom:10px;}
+    .price-row{gap:8px;padding:10px 14px;}
+    .sc-foot{padding:10px 14px;}
+
+    /* 포지션 카드 버튼 */
+    .pos-btns{gap:8px;}
+    .btn-tp,.btn-sl,.btn-ep{min-height:42px;padding:10px 14px;font-size:13px;}
+
+    /* 폼 공통 */
+    input,select,textarea{min-height:46px;font-size:15px;padding:10px 14px;}
+    button{min-height:44px;}
   }
 
-  /* ═══════════════════════════════════
+  /* ═══════════════════════════════════════════════════
      📱 소형 모바일 (480px 이하)
-  ═══════════════════════════════════ */
+  ═══════════════════════════════════════════════════ */
   @media(max-width:480px){
     /* 헤더 최소화 */
-    .logo{font-size:14px;}
+    header{padding:9px 14px;}
+    .logo{font-size:15px;}
     .logo span{display:none;}
     header a span{display:none;}
-    header>div:last-child>span#wsStatus{font-size:10px;}
+    header a{padding:8px 10px;}
+    header>div:last-child>span#wsStatus{font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-    /* PnL 배너 1열 */
-    .pnl-banner{grid-template-columns:1fr;}
-    .pnl-card-val{font-size:22px;}
+    /* 메인 */
+    .main{padding:14px 12px 80px;}
+
+    /* PnL 배너 — 2열 유지, 더 콤팩트 */
+    .pnl-banner{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .pnl-card{padding:14px 14px;}
+    .pnl-card-lbl{font-size:10px;letter-spacing:.3px;}
+    .pnl-card-val{font-size:20px;}
 
     /* 통계 2열 */
-    .stats{grid-template-columns:repeat(2,1fr);}
+    .stats{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .stat{padding:14px 12px;}
+    .stat-v{font-size:17px;}
+    .stat-l{font-size:10px;}
 
-    /* 포지션 카드 가격 그리드 */
-    .pos-prices{grid-template-columns:repeat(3,1fr);}
-    .price-row{grid-template-columns:repeat(2,1fr);}
+    /* 빠른 입력 */
+    .quick{padding:14px 12px;}
+    .quick-top{flex-wrap:wrap;gap:6px;}
+    .qi{min-height:50px;font-size:15px;}
+    .btn-add{min-height:54px;font-size:15px;border-radius:12px;}
+
+    /* 포지션 카드 — 터치 버튼 여유롭게 */
+    .pos-card{padding:16px 14px 14px;}
+    .pos-btns{gap:8px;flex-wrap:wrap;}
+    .btn-tp,.btn-sl,.btn-ep{flex:1;min-width:calc(33% - 6px);min-height:46px;font-size:13px;padding:10px 6px;text-align:center;}
+
+    /* 가격 그리드 */
+    .pos-prices{grid-template-columns:repeat(3,1fr);gap:6px;}
+    .price-row{grid-template-columns:repeat(2,1fr);gap:6px;padding:8px 10px;}
+
+    /* 시나리오 카드 */
+    .sc{padding:14px 14px 12px;}
+    .sc-ticker{font-size:17px;}
+    .price-row{gap:6px;padding:8px 10px;}
+    .sc-foot{padding:10px 12px;}
+    .cards{gap:12px;}
 
     /* 유저 선택 화면 */
-    .user-sel-grid{grid-template-columns:1fr 1fr;}
+    .user-sel-box{padding:20px 14px 32px;}
+    .user-sel-icon{font-size:40px;}
+    .user-sel-title{font-size:22px;}
+    .user-sel-grid{grid-template-columns:1fr 1fr;gap:10px;}
     .user-sel-btn{padding:18px 8px;font-size:20px;}
-    .user-sel-bal-input{font-size:14px;}
+    .user-sel-bal-input{font-size:15px;min-height:46px;}
     .lb-wrap{max-width:100%;}
-    .lb-row{grid-template-columns:22px 1fr 72px 72px;padding:9px 12px;gap:4px;}
-    .lb-rank{font-size:14px;}
+    .lb-row{grid-template-columns:20px 1fr 68px 68px;padding:10px 12px;gap:4px;}
+    .lb-rank{font-size:13px;}
     .lb-name{font-size:13px;}
     .lb-pct{font-size:12px;}
     .lb-money{font-size:11px;}
 
-    /* 캘린더 더 작게 */
-    .cal-cell{min-height:42px;padding:3px 2px;}
+    /* 캘린더 */
+    .cal-cell{min-height:46px;padding:4px 3px;}
     .cal-date{font-size:10px;}
     .cal-pnl{font-size:9px;}
     .cal-head{font-size:10px;}
+    .cal-grid{gap:2px;}
 
-    /* 빠른입력 폼 */
-    .quick{padding:12px 14px;}
-    .quick-top{flex-wrap:wrap;gap:6px;}
-
-    /* 시나리오 카드 */
-    .sc-ticker{font-size:17px;}
-    .price-row{gap:4px;padding:8px 12px;}
-
-    /* 모달 */
-    .smodal-box{margin:12px;padding:20px 16px;max-height:calc(100vh - 24px);}
+    /* 모달 — 바텀 시트 스타일 */
+    .modal-bg{align-items:flex-end !important;}
+    .modal{
+      margin:0;
+      padding:24px 18px 36px;
+      max-height:90vh;
+      border-radius:20px 20px 0 0 !important;
+      width:100%;
+      max-width:100%;
+      box-sizing:border-box;
+      /* iOS 홈바 여백 */
+      padding-bottom:max(36px, env(safe-area-inset-bottom, 20px));
+    }
 
     /* 예수금 배너 */
-    #balanceSection{padding:12px 14px;}
+    #balanceSection{padding:12px 12px;}
     #balanceDisplay{font-size:20px;}
+    #balanceSection button{min-height:44px;font-size:13px;}
+
+    /* 히스토리 테이블 */
+    table{min-width:580px;}
+    td,th{padding:10px 10px;font-size:11px;}
+
+    /* 폼 공통 */
+    input,select,textarea{min-height:48px;font-size:16px;/* iOS zoom 방지 */}
+  }
+
+  /* ═══════════════════════════════════════════════════
+     📱 초소형 (360px 이하 — Galaxy S 등)
+  ═══════════════════════════════════════════════════ */
+  @media(max-width:360px){
+    .main{padding:12px 10px 80px;}
+    .pnl-banner{gap:6px;}
+    .pnl-card{padding:12px 12px;}
+    .pnl-card-val{font-size:18px;}
+    .stats{gap:6px;}
+    .stat{padding:12px 10px;}
+    .stat-v{font-size:16px;}
+    .user-sel-grid{grid-template-columns:1fr;}
+    .lb-row{grid-template-columns:18px 1fr 60px 60px;padding:9px 10px;}
   }
   </style>
 </head>
