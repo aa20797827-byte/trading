@@ -1628,21 +1628,26 @@
       }catch{}
     }
 
-    // ② Cloudflare Worker → Nasdaq 프리/애프터장 가격 (CORS 완전 허용)
+    // ② Cloudflare Worker → Yahoo Finance / Nasdaq 프리/애프터장 가격
     try{
       const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),8000);
       const r=await fetch(`/api/extended-price?ticker=${ticker}`,{signal:ctrl.signal});
       if(r.ok){
         const d=await r.json();
-        console.log(`[Nasdaq ${ticker}]`, d);
+        console.log(`[ExtPrice(${d.source||'?'}) ${ticker}]`, d);
 
-        // ★ live: 프리/애프터 활성 중 실시간 가격 (최우선)
+        // dayHigh / dayLow / prevClose 보완 (Yahoo가 반환하는 경우)
+        if(!prevClose && d.prevClose>0)  prevClose=d.prevClose;
+        if(!dayHigh   && d.dayHigh>0)    dayHigh=d.dayHigh;
+        if(!dayLow    && d.dayLow>0)     dayLow=d.dayLow;
+
+        // ★ live: 현재 활성 세션 실시간 가격 (최우선)
         if(d.live?.price>0){
           const liveType=(d.live.type||'').toUpperCase();
           if(liveType.includes('PRE')||state==='PRE'){
-            pre=d.live.price; preChg=d.live.pct||0;
+            pre=d.live.price; preChg=d.live.pct??null;
           } else {
-            post=d.live.price; postChg=d.live.pct||0;
+            post=d.live.price; postChg=d.live.pct??null;
           }
         }
 
@@ -1652,10 +1657,10 @@
         }
 
         // 세션 집계 데이터 (live 없을 때 보완)
-        if(!pre && d.pre?.price>0){ pre=d.pre.price; preChg=d.pre.pct||0; }
-        if(!post && d.post?.price>0){ post=d.post.price; postChg=d.post.pct||0; }
-        // 장마감 중 가장 최근 extended 가격 표시
-        if(state==='CLOSED' && !post && d.pre?.price>0){ post=d.pre.price; postChg=d.pre.pct||0; }
+        if(!pre  && d.pre?.price>0)  { pre=d.pre.price;   preChg=d.pre.pct??null;   }
+        if(!post && d.post?.price>0) { post=d.post.price; postChg=d.post.pct??null; }
+        // 장마감: 가장 최근 extended 가격 표시
+        if(state==='CLOSED' && !post && d.pre?.price>0){ post=d.pre.price; postChg=d.pre.pct??null; }
       }
     }catch{}
 
@@ -1734,16 +1739,18 @@
       const q=await fetchQuote(s.ticker);
       if(q){
         const existing=priceCache[s.id];
-        if(existing){
-          // WS가 이미 업데이트한 pre/post 가격은 보존 — REST가 덮어쓰지 않음
+        const curState=getMarketState();
+        const wsActive=finnhubWS && finnhubWS.readyState===WebSocket.OPEN;
+        if(existing && curState==='REGULAR' && wsActive){
+          // 본장 + WS 활성: WS가 이미 업데이트한 regular 가격 보존, pre/post만 보완
           priceCache[s.id]={
             ...q,
-            pre:  existing.pre  || q.pre,
-            post: existing.post || q.post,
-            preChg:  existing.pre  ? existing.preChg  : q.preChg,
-            postChg: existing.post ? existing.postChg : q.postChg,
+            regular:    existing.regular    || q.regular,
+            regularChg: existing.regularChg ?? q.regularChg,
+            regularChgAbs: existing.regularChgAbs ?? q.regularChgAbs,
           };
         } else {
+          // 프리장·애프터장·장마감: 항상 최신 REST 데이터로 전면 교체
           priceCache[s.id]=q;
         }
       } else if(!(s.id in priceCache)){
@@ -2551,8 +2558,8 @@
       return;
     }
 
-    // 본장 30초 | 프리·애프터 60초
-    const interval = state==='REGULAR' ? 30000 : 60000;
+    // 본장 30초 | 프리·애프터 30초 | 장마감 120초
+    const interval = state==='REGULAR' ? 30000 : state==='CLOSED' ? 120000 : 30000;
 
     restInterval=setInterval(async()=>{
       if(!scenarios.some(s=>s.status==='entered')) return;
