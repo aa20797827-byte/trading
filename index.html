@@ -729,21 +729,41 @@
     const tickerSet = new Set();
     userRaw.forEach(u=>u.entered.forEach(s=>tickerSet.add(s.ticker)));
 
-    // ④ Polygon.io Snapshot으로 현재가 병렬 조회
+    // ④ Yahoo Finance + Polygon.io prev day로 현재가 병렬 조회
     const prices = {};
     if(tickerSet.size>0){
       await Promise.all([...tickerSet].map(async ticker=>{
-        try{
-          const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
-          const r=await fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${ticker}?apiKey=${POLYGON_KEY}`,
-            {headers:{'Accept':'application/json'},signal:ctrl.signal});
-          if(r.ok){
+        // Yahoo Finance 시도
+        const fields='regularMarketPrice';
+        const yUrl=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
+        const proxies=[
+          yUrl,
+          `https://corsproxy.io/?url=${encodeURIComponent(yUrl)}`,
+          `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
+        ];
+        for(const url of proxies){
+          try{
+            const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
+            const r=await fetch(url,{signal:ctrl.signal});
+            if(!r.ok)continue;
             const d=await r.json();
-            const t=d?.ticker;
-            const p=t?.lastTrade?.p||t?.day?.c||0;
-            if(p>0) prices[ticker]=p;
-          }
-        }catch{}
+            const p=d?.quoteResponse?.result?.[0]?.regularMarketPrice;
+            if(p>0){ prices[ticker]=p; break; }
+          }catch{}
+        }
+        // Yahoo 실패 시 Polygon.io prev day fallback
+        if(!prices[ticker]){
+          try{
+            const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),5000);
+            const r=await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?apiKey=${POLYGON_KEY}`,
+              {headers:{'Accept':'application/json'},signal:ctrl.signal});
+            if(r.ok){
+              const d=await r.json();
+              const p=d?.results?.[0]?.c||0;
+              if(p>0) prices[ticker]=p;
+            }
+          }catch{}
+        }
       }));
     }
 
@@ -951,40 +971,7 @@
     let pre=null,preChg=null,post=null,postChg=null;
     let dayHigh=null,dayLow=null,prevClose=null,dataState=state;
 
-    // ① Polygon.io Snapshot — 현재가·전일종가·고/저
-    try{
-      const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
-      const r=await fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${ticker}?apiKey=${POLYGON_KEY}`,
-        {headers:{'Accept':'application/json'},signal:ctrl.signal});
-      if(r.ok){
-        const d=await r.json();
-        const t=d?.ticker;
-        console.log(`[Polygon ${ticker}]`, t);
-        if(t){
-          const lastPrice=t.lastTrade?.p||t.day?.c||0;
-          prevClose=t.prevDay?.c||0;
-          dayHigh=t.day?.h||0;
-          dayLow=t.day?.l||0;
-          const chgPct=t.todaysChangePerc||0;
-          const chgAbs=t.todaysChange||0;
-          if(lastPrice>0){
-            if(state==='REGULAR'){
-              regular=lastPrice; regularChg=chgPct; regularChgAbs=chgAbs;
-            } else if(state==='PRE'){
-              regular=prevClose||t.prevDay?.c||0;
-              pre=lastPrice; preChg=chgPct;
-            } else if(state==='POST'){
-              regular=t.day?.c||lastPrice;
-              post=lastPrice; postChg=chgPct;
-            } else {
-              regular=t.day?.c||prevClose||lastPrice;
-            }
-          }
-        }
-      }
-    }catch{}
-
-    // ② Yahoo Finance v7 quote API — preMarketPrice / postMarketPrice 포함
+    // ① Yahoo Finance v7 — 실시간 현재가 (프리/애프터 포함) [PRIMARY]
     const fields='regularMarketPrice,regularMarketChangePercent,regularMarketChange,regularMarketDayHigh,regularMarketDayLow,preMarketPrice,preMarketChangePercent,postMarketPrice,postMarketChangePercent,previousClose,marketState';
     const yq1=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
     const yq2=`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${ticker}&fields=${fields}`;
@@ -993,6 +980,7 @@
       `https://corsproxy.io/?url=${encodeURIComponent(yq1)}`,
       `https://api.allorigins.win/raw?url=${encodeURIComponent(yq1)}`,
       `https://corsproxy.io/?url=${encodeURIComponent(yq2)}`,
+      `https://thingproxy.freeboard.io/fetch/${yq1}`,
     ];
     for(const url of yfUrls){
       try{
@@ -1003,28 +991,47 @@
         const q=d?.quoteResponse?.result?.[0];
         if(!q)continue;
 
-        // 기본 데이터 보완
-        if(!prevClose) prevClose=q.previousClose||0;
-        if(!dayHigh)   dayHigh=q.regularMarketDayHigh;
-        if(!dayLow)    dayLow=q.regularMarketDayLow;
-        if(!regular&&q.regularMarketPrice){
+        prevClose=q.previousClose||0;
+        dayHigh=q.regularMarketDayHigh||null;
+        dayLow=q.regularMarketDayLow||null;
+        if(q.regularMarketPrice){
           regular=q.regularMarketPrice;
           regularChg=q.regularMarketChangePercent||0;
           regularChgAbs=q.regularMarketChange||0;
         }
-        // ★ 프리장 가격 (핵심)
         if(q.preMarketPrice&&q.preMarketPrice>0){
           pre=q.preMarketPrice;
           preChg=q.preMarketChangePercent||null;
         }
-        // ★ 애프터장 가격
         if(q.postMarketPrice&&q.postMarketPrice>0){
           post=q.postMarketPrice;
           postChg=regular?((post-regular)/regular*100):null;
         }
         if(q.marketState) dataState=q.marketState;
+        console.log(`[Yahoo ${ticker}]`, {regular, pre, post, state:dataState});
         break;
       }catch{continue;}
+    }
+
+    // ② Polygon.io prev day — Yahoo 실패 시 전일 종가 fallback
+    if(!regular){
+      try{
+        const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
+        const r=await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?apiKey=${POLYGON_KEY}`,
+          {headers:{'Accept':'application/json'},signal:ctrl.signal});
+        if(r.ok){
+          const d=await r.json();
+          const res=d?.results?.[0];
+          console.log(`[Polygon prev ${ticker}]`, res);
+          if(res){
+            if(!prevClose) prevClose=res.c||0;
+            if(!dayHigh)   dayHigh=res.h||0;
+            if(!dayLow)    dayLow=res.l||0;
+            regular=res.c||0; // 전일 종가 (최후 수단)
+            regularChg=0; regularChgAbs=0;
+          }
+        }
+      }catch{}
     }
 
     if(!regular&&!pre&&!post) return null;
