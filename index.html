@@ -1065,27 +1065,36 @@
       }catch{}
     }
 
-    // ② Cloudflare Worker → Nasdaq 실시간 프리/애프터장 가격 (CORS 완전 허용)
-    if(state !== 'REGULAR'){
-      try{
-        const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),7000);
-        const r=await fetch(`/api/extended-price?ticker=${ticker}`,{signal:ctrl.signal});
-        if(r.ok){
-          const d=await r.json();
-          console.log(`[Nasdaq ExtHours ${ticker}]`, d);
-          if(state==='PRE' && d.pre?.price>0){
-            pre=d.pre.price; preChg=d.pre.pct||0;
-          }
-          if((state==='POST'||state==='CLOSED') && d.post?.price>0){
-            post=d.post.price; postChg=d.post.pct||0;
-          }
-          // 장마감 중 프리만 있으면 프리 사용
-          if(state==='CLOSED' && !post && d.pre?.price>0){
-            post=d.pre.price; postChg=d.pre.pct||0;
+    // ② Cloudflare Worker → Nasdaq 프리/애프터장 가격 (CORS 완전 허용)
+    try{
+      const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),8000);
+      const r=await fetch(`/api/extended-price?ticker=${ticker}`,{signal:ctrl.signal});
+      if(r.ok){
+        const d=await r.json();
+        console.log(`[Nasdaq ${ticker}]`, d);
+
+        // ★ live: 프리/애프터 활성 중 실시간 가격 (최우선)
+        if(d.live?.price>0){
+          const liveType=(d.live.type||'').toUpperCase();
+          if(liveType.includes('PRE')||state==='PRE'){
+            pre=d.live.price; preChg=d.live.pct||0;
+          } else {
+            post=d.live.price; postChg=d.live.pct||0;
           }
         }
-      }catch{}
-    }
+
+        // regular 보완 (Finnhub 실패 시)
+        if(!regular && d.regular?.price>0){
+          regular=d.regular.price; regularChg=d.regular.pct||0; regularChgAbs=d.regular.chg||0;
+        }
+
+        // 세션 집계 데이터 (live 없을 때 보완)
+        if(!pre && d.pre?.price>0){ pre=d.pre.price; preChg=d.pre.pct||0; }
+        if(!post && d.post?.price>0){ post=d.post.price; postChg=d.post.pct||0; }
+        // 장마감 중 가장 최근 extended 가격 표시
+        if(state==='CLOSED' && !post && d.pre?.price>0){ post=d.pre.price; postChg=d.pre.pct||0; }
+      }
+    }catch{}
 
     // ③ Twelve Data — 본장 Finnhub 실패 시 + 정규 종가 보완
     try{
@@ -1241,13 +1250,13 @@
             </div></div>`;
         }
         priceBlock=`
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 5px">
-            <div>
+          <div style="margin:8px 0 5px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <span style="font-size:19px;font-weight:800;color:var(--text)">$${eff.toFixed(2)}</span>
-              ${pnl?`<span class="${pCls}" style="font-size:12px;font-weight:700;margin-left:6px">${sign}$${Math.abs(pnl.pnl).toFixed(2)} (${sign}${pnl.pct.toFixed(2)}%)</span>`:''}
-              ${pnl?`<div style="font-size:10px;color:var(--muted);margin-top:1px">진입가 $${parseFloat(s.entry).toFixed(2)} 대비</div>`:''}
+              <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${si.c}22;color:${si.c};white-space:nowrap">${si.label}</span>
+              ${pnl?`<span class="${pCls}" style="font-size:13px;font-weight:700">${sign}$${Math.abs(pnl.pnl).toFixed(2)} (${sign}${pnl.pct.toFixed(2)}%)</span>`:''}
             </div>
-            <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${si.c}22;color:${si.c}">${si.label}</span>
+            ${pnl?`<div style="font-size:10px;color:var(--muted);margin-top:3px">진입가 $${parseFloat(s.entry).toFixed(2)} 대비</div>`:''}
           </div>
           <div style="background:var(--bg);border-radius:6px;padding:7px 9px;margin-bottom:4px;font-size:12px">
             ${q.regularChg!=null?`<div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:var(--muted)">정규장</span><span class="${chgCls(q.regularChg)}" style="font-weight:600">${fmtChg(q.regularChg,q.regularChgAbs)}</span></div>`:''}

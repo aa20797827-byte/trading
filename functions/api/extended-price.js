@@ -2,13 +2,11 @@
  * Cloudflare Pages Function
  * GET /api/extended-price?ticker=RDW
  *
- * Nasdaq 프리/애프터장 실시간 가격을 CORS 없이 반환
- * - 프리장:   4:00 AM ~ 9:30 AM ET
- * - 애프터장: 4:00 PM ~ 8:00 PM ET
+ * 1순위: Nasdaq /info secondaryData  — 프리/애프터 활성 중 실시간 가격
+ * 2순위: Nasdaq /extended-trading    — 마감 후 마지막 세션 데이터
  */
 
 export async function onRequest(context) {
-  // OPTIONS preflight
   if (context.request.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -30,49 +28,80 @@ export async function onRequest(context) {
     'Origin': 'https://www.nasdaq.com',
   };
 
-  // "$24.36 +6.87 (+39.28%)" 형식에서 가격 파싱
   const parsePrice = (str) => {
     if (!str || str === 'N/A') return null;
-    const m = str.match(/\$([0-9]+(?:\.[0-9]+)?)/);
+    const m = str.replace(/,/g, '').match(/\$?([0-9]+(?:\.[0-9]+)?)/);
     return m ? parseFloat(m[1]) : null;
   };
 
-  // "(+39.28%)" 형식에서 등락률 파싱
   const parsePct = (str) => {
     if (!str) return null;
-    const m = str.match(/\(([+-]?[0-9]+(?:\.[0-9]+)?)%\)/);
+    // "(+39.28%)" 또는 "+39.28%" 또는 "39.28%"
+    const m = str.match(/([+-]?[0-9]+(?:\.[0-9]+)?)%/);
     return m ? parseFloat(m[1]) : null;
   };
 
   try {
-    const [preRes, postRes] = await Promise.all([
-      fetch(
-        `https://api.nasdaq.com/api/quote/${ticker}/extended-trading?assetclass=stocks&markettype=pre`,
-        { headers: nasdaqHeaders }
-      ),
-      fetch(
-        `https://api.nasdaq.com/api/quote/${ticker}/extended-trading?assetclass=stocks&markettype=post`,
-        { headers: nasdaqHeaders }
-      ),
+    // 3개 엔드포인트 병렬 호출
+    const [infoRes, preRes, postRes] = await Promise.all([
+      fetch(`https://api.nasdaq.com/api/quote/${ticker}/info?assetclass=stocks`, { headers: nasdaqHeaders }),
+      fetch(`https://api.nasdaq.com/api/quote/${ticker}/extended-trading?assetclass=stocks&markettype=pre`, { headers: nasdaqHeaders }),
+      fetch(`https://api.nasdaq.com/api/quote/${ticker}/extended-trading?assetclass=stocks&markettype=post`, { headers: nasdaqHeaders }),
     ]);
 
-    const [preData, postData] = await Promise.all([
+    const [infoData, preData, postData] = await Promise.all([
+      infoRes.json().catch(() => null),
       preRes.json().catch(() => null),
       postRes.json().catch(() => null),
     ]);
 
+    // ── 1순위: secondaryData (프리/애프터 활성 중 실시간) ──
+    const secondary = infoData?.data?.secondaryData;
+    const primary   = infoData?.data?.primaryData;
+    const mktStatus = infoData?.data?.marketStatus || 'Closed';
+
+    let live = null;
+    if (secondary?.lastSalePrice) {
+      const livePrice = parsePrice(secondary.lastSalePrice);
+      const livePct   = parsePct(secondary.percentageChange);
+      if (livePrice && livePrice > 0) {
+        live = {
+          price:     livePrice,
+          pct:       livePct,
+          change:    parsePrice(secondary.netChange),
+          timestamp: secondary.lastTradeTimestamp,
+          type:      secondary.type || mktStatus, // "PRE_MARKET" | "AFTER_HOURS"
+        };
+      }
+    }
+
+    // ── 정규장 마지막 가격 ──
+    let regularPrice = null, regularPct = null, regularChgAbs = null;
+    if (primary?.lastSalePrice) {
+      regularPrice  = parsePrice(primary.lastSalePrice);
+      regularPct    = parsePct(primary.percentageChange);
+      regularChgAbs = parsePrice(primary.netChange);
+    }
+
+    // ── 2순위: 세션 집계 데이터 ──
     const preRow  = preData?.data?.infoTable?.rows?.[0]  || null;
     const postRow = postData?.data?.infoTable?.rows?.[0] || null;
 
     const result = {
       ticker,
+      marketStatus: mktStatus,
+      live,           // 활성 프리/애프터 실시간 (null이면 비활성)
+      regular: regularPrice ? {
+        price: regularPrice,
+        pct:   regularPct,
+        chg:   regularChgAbs,
+      } : null,
       pre: preRow ? {
         price:  parsePrice(preRow.consolidated),
         pct:    parsePct(preRow.consolidated),
         high:   parsePrice(preRow.highPrice),
         low:    parsePrice(preRow.lowPrice),
         volume: preRow.volume || null,
-        raw:    preRow.consolidated,
       } : null,
       post: postRow ? {
         price:  parsePrice(postRow.consolidated),
@@ -80,15 +109,8 @@ export async function onRequest(context) {
         high:   parsePrice(postRow.highPrice),
         low:    parsePrice(postRow.lowPrice),
         volume: postRow.volume || null,
-        raw:    postRow.consolidated,
       } : null,
-      // 프리/애프터 중 더 최신 데이터 (unified용)
-      extended: null,
     };
-
-    // unified: 현재 상태에 맞는 가격 선택
-    if (result.pre?.price)  result.extended = result.pre;
-    if (result.post?.price) result.extended = result.post;
 
     return new Response(JSON.stringify(result), {
       headers: {
@@ -103,10 +125,7 @@ export async function onRequest(context) {
       JSON.stringify({ error: String(err), ticker }),
       {
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       }
     );
   }
