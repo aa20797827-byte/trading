@@ -5,13 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Trading Desk</title>
   <style>
+    /* ── 나이트 모드 (기본) ── */
     :root{
       --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;
-      --text:#e6edf3;--muted:#8b949e;
+      --text:#c9d1d9;--muted:#8b949e;
       --green:#3fb950;--red:#f85149;--yellow:#d29922;--blue:#58a6ff;--purple:#bc8cff;
     }
+    /* ── 라이트 모드 ── */
+    html[data-theme="light"]{
+      --bg:#f6f8fa;--surface:#ffffff;--surface2:#eaeef2;--border:#d0d7de;
+      --text:#1f2328;--muted:#57606a;
+      --green:#1a7f37;--red:#cf222e;--yellow:#9a6700;--blue:#0969da;--purple:#7c3aed;
+    }
+    html[data-theme="light"] .user-sel-ov{
+      background:linear-gradient(135deg,#f6f8fa,#eaeef2);
+    }
+    html[data-theme="light"] .modal{background:var(--surface);}
+    html[data-theme="light"] .pos-section{border-color:rgba(26,127,55,.4);}
+    html[data-theme="light"] .pos-card{border-color:rgba(26,127,55,.25);}
+    html[data-theme="light"] .sc{background:var(--surface);}
+    html[data-theme="light"] .pnl-card{background:var(--surface);}
+    html[data-theme="light"] .stat{background:var(--surface);}
+    html[data-theme="light"] .quick{background:var(--surface);}
+    html[data-theme="light"] .qi{background:var(--surface2);}
+    html[data-theme="light"] .mob-gnb{background:var(--surface);border-top-color:var(--border);}
+    html[data-theme="light"] .lb-wrap{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.08);}
+    html[data-theme="light"] .mob-h-card{background:var(--surface);border-color:var(--border);}
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;transition:background .2s,color .2s;}
 
     /* 헤더 */
     header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px;}
@@ -566,10 +587,11 @@
     }
     .gnb-btn.gnb-active { color: var(--blue); }
 
-    .gnb-icon {
-      font-size: 21px;
-      line-height: 1;
+    .gnb-svg {
+      width: 22px; height: 22px;
       margin-bottom: 3px;
+      flex-shrink: 0;
+      stroke: currentColor;
     }
     .gnb-label {
       font-size: 10px;
@@ -615,7 +637,53 @@
       transform: scale(.94);
       box-shadow: 0 2px 8px rgba(88,166,255,.3);
     }
-    .gnb-center .gnb-icon { display: none; }
+    /* ── 테마 토글 버튼 ── */
+    .theme-btn{
+      background:var(--surface2);border:1px solid var(--border);
+      color:var(--text);border-radius:8px;
+      padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;
+      font-family:inherit;display:flex;align-items:center;gap:5px;
+      transition:all .15s;white-space:nowrap;
+    }
+    .theme-btn:hover{border-color:var(--blue);color:var(--blue);}
+    /* 모바일에서 테마 버튼 압축 */
+    @media(max-width:768px){
+      .theme-btn .theme-btn-txt{display:none;}
+      .theme-btn{padding:6px 8px;border-radius:8px;}
+    }
+
+    /* ── 모바일 히스토리 카드 ── */
+    .mob-h-cards{display:none;flex-direction:column;gap:10px;}
+    .mob-h-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:12px;padding:14px 16px;
+      display:flex;flex-direction:column;gap:8px;
+      transition:border-color .15s;
+    }
+    .mob-h-card:active{border-color:var(--blue);}
+    .mob-h-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .mob-h-ticker{font-size:16px;font-weight:800;color:var(--blue);}
+    .mob-h-dir{font-size:11px;font-weight:800;padding:2px 7px;border-radius:4px;}
+    .mob-h-dir.long{color:var(--green);background:rgba(63,185,80,.12);}
+    .mob-h-dir.short{color:var(--red);background:rgba(248,81,73,.12);}
+    .mob-h-date{font-size:11px;color:var(--muted);margin-left:auto;}
+    .mob-h-result{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
+    .mob-h-result.tp{background:rgba(63,185,80,.12);color:var(--green);}
+    .mob-h-result.sl{background:rgba(248,81,73,.12);color:var(--red);}
+    .mob-h-mid{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+    .mob-h-price{font-weight:600;color:var(--text);font-size:13px;}
+    .mob-h-qty{margin-left:auto;font-size:11px;color:var(--muted);}
+    .mob-h-bot{display:flex;align-items:center;}
+    .mob-h-pnl{font-size:15px;font-weight:800;}
+    .mob-h-pct{font-size:12px;font-weight:600;margin-left:7px;}
+    .mob-h-del{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px;font-size:13px;border-radius:6px;}
+    .mob-h-del:active{color:var(--red);}
+
+    /* 모바일 히스토리 통계 — 간결하게 2×2 */
+    .mob-h-stats{display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+    .mob-h-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;}
+    .mob-h-stat-l{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+    .mob-h-stat-v{font-size:18px;font-weight:800;}
 
     /* ── 홈 페이지 카드 간격 ── */
     #mp-home .pnl-banner { margin-bottom: 12px; }
@@ -659,9 +727,10 @@
     #mp-scenario .cards { grid-template-columns: 1fr; gap: 12px; }
 
     /* ── 내역 페이지 ── */
-    #mp-history .h-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; }
-    #mp-history .h-table { min-width: 600px; }
-    #mp-history .history-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    #mp-history .h-wrap { display: none; }           /* 테이블 숨기고 카드로 */
+    #mp-history .history-stats { display: none; }    /* 기존 통계 숨기고 간결한 버전으로 */
+    #mp-history .mob-h-cards { display: flex; }
+    #mp-history .mob-h-stats  { display: grid; }
   }
 
   /* ── 소형 iPhone (390px 이하) ── */
@@ -766,6 +835,10 @@
     <a href="chart-lab.html" style="background:rgba(88,166,255,.18);border:1px solid rgba(88,166,255,.55);color:var(--blue);border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;">🔬 차트 연구실</a>
     <span id="wsStatus" style="font-size:11px;font-weight:700;color:var(--muted)">⚫ 연결 중...</span>
     <button onclick="refreshPrices()" id="refreshBtn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px;">🔄 가격 갱신</button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+      <svg id="themeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      <span class="theme-btn-txt" id="themeTxt">라이트</span>
+    </button>
     <span style="color:var(--muted);font-size:12px" id="hDate"></span>
   </div>
 </header>
@@ -863,7 +936,13 @@
         <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">청산 완료된 매매</span>
       </div>
     </div>
+    <!-- 모바일 전용 통계 (간결 2×2) -->
+    <div class="mob-h-stats" id="mobHistStats"></div>
+    <!-- 기존 데스크탑 통계 -->
     <div class="history-stats" id="historyStats"></div>
+    <!-- 모바일 전용 카드 리스트 -->
+    <div class="mob-h-cards" id="hCards"></div>
+    <!-- 데스크탑 테이블 -->
     <div class="h-wrap">
       <table class="h-table">
         <thead><tr>
@@ -965,29 +1044,31 @@
 <nav class="mob-gnb" id="mobGnb">
   <!-- 홈 -->
   <button class="gnb-btn" id="gnb-home" onclick="mobSwitch('home')">
-    <span class="gnb-icon">🏠</span>
+    <svg class="gnb-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
     <span class="gnb-label">홈</span>
   </button>
   <!-- 포지션 -->
   <button class="gnb-btn" id="gnb-position" onclick="mobSwitch('position')">
-    <span class="gnb-icon">📊</span>
+    <svg class="gnb-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="9"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     <span class="gnb-label">포지션</span>
     <span class="gnb-badge" id="gnbPosBadge"></span>
   </button>
   <!-- 추가 (중앙 FAB) -->
   <button class="gnb-btn gnb-center" id="gnb-input" onclick="mobSwitch('input')">
-    <span class="gnb-fab">➕</span>
+    <span class="gnb-fab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" width="26" height="26"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </span>
     <span class="gnb-label">추가</span>
   </button>
   <!-- 관망 -->
   <button class="gnb-btn" id="gnb-scenario" onclick="mobSwitch('scenario')">
-    <span class="gnb-icon">📋</span>
+    <svg class="gnb-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
     <span class="gnb-label">관망</span>
     <span class="gnb-badge" id="gnbScBadge"></span>
   </button>
   <!-- 내역 -->
   <button class="gnb-btn" id="gnb-history" onclick="mobSwitch('history')">
-    <span class="gnb-icon">📒</span>
+    <svg class="gnb-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     <span class="gnb-label">내역</span>
   </button>
 </nav>
@@ -1011,6 +1092,36 @@
     databaseURL: "https://trading-desk-2adf7-default-rtdb.firebaseio.com"
   });
   const db = firebase.database();
+
+  // ══════════════════════════════════════════
+  // 🌙 테마 (나이트 / 라이트) 토글
+  // ══════════════════════════════════════════
+  function toggleTheme(){
+    const isLight = document.documentElement.getAttribute('data-theme')==='light';
+    const next = isLight ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('td_theme', next);
+    _updateThemeBtn(next);
+  }
+  function _updateThemeBtn(theme){
+    const ico = document.getElementById('themeIco');
+    const txt = document.getElementById('themeTxt');
+    if(!ico) return;
+    if(theme==='light'){
+      ico.innerHTML=`<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/><circle cx="12" cy="12" r="5"/>`;
+      if(txt) txt.textContent='나이트';
+    } else {
+      ico.innerHTML=`<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>`;
+      if(txt) txt.textContent='라이트';
+    }
+  }
+  // 초기 테마 적용 (즉시 실행)
+  (function(){
+    const saved = localStorage.getItem('td_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    if(document.readyState!=='loading'){ _updateThemeBtn(saved); }
+    else { document.addEventListener('DOMContentLoaded',()=>_updateThemeBtn(saved)); }
+  })();
 
   // ══════════════════════════════════════════
   // 📱 모바일 GNB 탭 전환
@@ -1909,7 +2020,6 @@
     const sl = closed.filter(s=>s.closeType==='손절');
     const tp = closed.filter(s=>s.closeType==='익절');
 
-    // 수익/손실 분리 계산
     let totalProfit=0, totalLoss=0;
     const pnlList = closed.map(s=>{
       if(!s.entry||!s.closePrice) return 0;
@@ -1932,12 +2042,13 @@
     const s_=(v,pre='$')=>v>=0?`+${pre}${Math.abs(v).toFixed(2)}`:`-${pre}${Math.abs(v).toFixed(2)}`;
     const cls_=(v)=>v>0?'c-green':v<0?'c-red':'c-muted';
 
+    // ── 데스크탑 통계 (12칸) ──
     document.getElementById('historyStats').innerHTML=`
       <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:4px">
-        <div class="hs"><div class="hs-l">총 매매 횟수</div><div class="hs-v c-blue">${closed.length}회</div></div>
+        <div class="hs"><div class="hs-l">총 매매</div><div class="hs-v c-blue">${closed.length}회</div></div>
         <div class="hs"><div class="hs-l">승률</div><div class="hs-v ${closed.length?'c-green':'c-muted'}">${wr}%</div></div>
-        <div class="hs"><div class="hs-l">✅ 익절</div><div class="hs-v c-green">${tp.length}회</div></div>
-        <div class="hs"><div class="hs-l">🛑 손절</div><div class="hs-v c-red">${sl.length}회</div></div>
+        <div class="hs"><div class="hs-l">익절</div><div class="hs-v c-green">${tp.length}회</div></div>
+        <div class="hs"><div class="hs-l">손절</div><div class="hs-v c-red">${sl.length}회</div></div>
         <div class="hs"><div class="hs-l">순 손익</div><div class="hs-v ${cls_(totalPnl)}">${s_(totalPnl)}</div></div>
         <div class="hs"><div class="hs-l">평균 수익</div><div class="hs-v c-green">+$${(+avgProfit).toFixed(2)}</div></div>
         <div class="hs"><div class="hs-l">평균 손실</div><div class="hs-v c-red">-$${(+avgLoss).toFixed(2)}</div></div>
@@ -1950,19 +2061,28 @@
         <div class="hs"><div class="hs-l">최대 손절</div><div class="hs-v c-red">-$${Math.abs(+maxLoss).toFixed(2)}</div></div>
       </div>`;
 
+    // ── 모바일 통계 (4칸 간결) ──
+    document.getElementById('mobHistStats').innerHTML=`
+      <div class="mob-h-stat"><div class="mob-h-stat-l">승률</div><div class="mob-h-stat-v ${closed.length?'c-green':'c-muted'}">${wr}%</div></div>
+      <div class="mob-h-stat"><div class="mob-h-stat-l">순 손익</div><div class="mob-h-stat-v ${cls_(totalPnl)}">${s_(totalPnl)}</div></div>
+      <div class="mob-h-stat"><div class="mob-h-stat-l">익절 / 손절</div><div class="mob-h-stat-v"><span class="c-green">${tp.length}</span><span style="color:var(--muted);font-size:14px;font-weight:400"> / </span><span class="c-red">${sl.length}</span></div></div>
+      <div class="mob-h-stat"><div class="mob-h-stat-l">기대값</div><div class="mob-h-stat-v ${cls_(+expectancy)}">${s_(+expectancy)}</div></div>`;
+
     if(!closed.length){
       document.getElementById('hBody').innerHTML=`<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">아직 종료된 매매가 없어요<br><span style="font-size:12px">포지션에서 익절 또는 손절 처리하면 자동으로 기록됩니다</span></td></tr>`;
+      document.getElementById('hCards').innerHTML=`<div class="empty"><div class="empty-icon">📒</div><div class="empty-title">매매 내역 없음</div><div>포지션 탭에서 익절·손절하면 자동 기록됩니다</div></div>`;
       return;
     }
 
-    document.getElementById('hBody').innerHTML = closed.map((s,i)=>{
-      let pnl='—', pct='—', pCls='';
+    // ── 데스크탑 테이블 rows ──
+    document.getElementById('hBody').innerHTML = closed.map(s=>{
+      let pnl='—', pct='—', pCls='', diff=0, p=0;
       if(s.entry && s.closePrice){
         const qty = parseFloat(s.qty)||1;
-        const diff = s.direction==='long'
+        diff = s.direction==='long'
           ?(parseFloat(s.closePrice)-parseFloat(s.entry))*qty
           :(parseFloat(s.entry)-parseFloat(s.closePrice))*qty;
-        const p = (s.direction==='long'
+        p = (s.direction==='long'
           ?(parseFloat(s.closePrice)-parseFloat(s.entry))/parseFloat(s.entry)
           :(parseFloat(s.entry)-parseFloat(s.closePrice))/parseFloat(s.entry))*100;
         pCls  = diff>=0?'pnl-p':'pnl-n';
@@ -1981,6 +2101,44 @@
         <td class="${s.closeType==='익절'?'result-tp':'result-sl'}">${s.closeType==='익절'?'✅ 익절':'🛑 손절'}</td>
         <td><button onclick="delHistory('${s.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;" title="삭제">🗑</button></td>
       </tr>`;
+    }).join('');
+
+    // ── 모바일 카드 ──
+    document.getElementById('hCards').innerHTML = closed.map(s=>{
+      let pnlHtml='', pctHtml='', pCls='', diff=0, p=0;
+      if(s.entry && s.closePrice){
+        const qty=parseFloat(s.qty)||1;
+        diff=s.direction==='long'
+          ?(parseFloat(s.closePrice)-parseFloat(s.entry))*qty
+          :(parseFloat(s.entry)-parseFloat(s.closePrice))*qty;
+        p=(s.direction==='long'
+          ?(parseFloat(s.closePrice)-parseFloat(s.entry))/parseFloat(s.entry)
+          :(parseFloat(s.entry)-parseFloat(s.closePrice))/parseFloat(s.entry))*100;
+        pCls=diff>=0?'pnl-p':'pnl-n';
+        pnlHtml=`${diff>=0?'+':''}$${Math.abs(diff).toFixed(2)}`;
+        pctHtml=`${p>=0?'+':''}${p.toFixed(2)}%`;
+      }
+      const isTP=s.closeType==='익절';
+      const entry=s.entry?'$'+parseFloat(s.entry).toFixed(2):'—';
+      const close=s.closePrice?'$'+parseFloat(s.closePrice).toFixed(2):'—';
+      const qty=s.qty?parseFloat(s.qty).toLocaleString()+'주':'—';
+      return `<div class="mob-h-card">
+        <div class="mob-h-top">
+          <span class="mob-h-ticker">${s.ticker}</span>
+          <span class="mob-h-dir ${s.direction}">${s.direction.toUpperCase()}</span>
+          <span class="mob-h-result ${isTP?'tp':'sl'}">${isTP?'익절':'손절'}</span>
+          <span class="mob-h-date">${s.closeDate||s.date}</span>
+        </div>
+        <div class="mob-h-mid">
+          <span class="mob-h-price">${entry} → ${close}</span>
+          <span class="mob-h-qty">${qty}</span>
+        </div>
+        <div class="mob-h-bot">
+          <span class="mob-h-pnl ${pCls}">${pnlHtml||'—'}</span>
+          <span class="mob-h-pct ${pCls}">${pctHtml}</span>
+          <button class="mob-h-del" onclick="delHistory('${s.id}')">🗑</button>
+        </div>
+      </div>`;
     }).join('');
   }
 
