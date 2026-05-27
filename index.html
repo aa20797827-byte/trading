@@ -37,7 +37,26 @@
     /* 헤더 */
     header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px;}
     .logo{font-size:17px;font-weight:700;color:var(--blue);}
-    .logo span{color:var(--muted);font-weight:400;font-size:12px;margin-left:8px;}
+    .logo .logo-sub{color:var(--muted);font-weight:400;font-size:12px;margin-left:8px;}
+    /* 헤더 사용자 배지 */
+    .logo-user{display:inline-flex;align-items:center;gap:8px;border-left:3px solid;padding-left:12px;margin-left:10px;vertical-align:middle;}
+    .logo-user-name{font-size:18px;font-weight:900;}
+    /* 헤더 버튼 공통 */
+    .hdr-btn{display:inline-flex;align-items:center;gap:6px;border-radius:10px;border:1px solid var(--border);padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;font-family:inherit;background:var(--surface2);color:var(--text);transition:all .15s;white-space:nowrap;}
+    .hdr-btn:hover{border-color:var(--blue);color:var(--blue);}
+    .hdr-btn svg{flex-shrink:0;}
+    /* 색상 변형 */
+    .hdr-purple{background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.3);color:var(--purple);}
+    .hdr-purple:hover{border-color:var(--purple);background:rgba(124,58,237,.16);}
+    .hdr-blue{background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.3);color:var(--blue);}
+    .hdr-blue:hover{background:rgba(88,166,255,.16);}
+    /* 아이콘 전용 버튼 */
+    .hdr-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;padding:0;}
+    .hdr-icon-btn:hover{border-color:var(--blue);color:var(--blue);}
+    /* 상태 pill */
+    .hdr-status{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;}
+    /* 사용자 전환 버튼 내 텍스트 (모바일에서 숨김) */
+    .hdr-user-txt{white-space:nowrap;}
     .mh{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.6;}
     .mh b{color:var(--text);font-weight:600;}
     .mh .dst{color:#58a6ff;} .mh .std{color:#d29922;}
@@ -406,7 +425,10 @@
     /* 헤더 최소화 */
     header{padding:9px 14px;}
     .logo{font-size:15px;}
-    .logo span{display:none;}
+    .logo .logo-sub{display:none;}
+    .logo-user-name{font-size:16px !important;}
+    .hdr-user-txt{display:none;}
+    .logo-user{border-left:none !important;padding-left:0 !important;margin-left:6px !important;}
     header a span{display:none;}
     header a{padding:8px 10px;}
     header>div:last-child>span#wsStatus{font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -525,20 +547,27 @@
     header {
       padding: 10px 14px !important;
       position: sticky; top: 0; z-index: 100;
+      gap: 8px;
     }
     header .mh { display: none; }
-    header > div:last-child > a { display: none; } /* 패턴분석, 차트연구실 숨김 */
-    #wsStatus { font-size: 10px !important; max-width: 90px; overflow: hidden;
-      white-space: nowrap; text-overflow: ellipsis; }
-    #refreshBtn { font-size: 11px !important; }
+    /* 패턴분석·차트연구실 링크 모바일 숨김 */
+    header .hdr-purple, header .hdr-blue { display: none; }
+    /* 구분선 숨김 */
+    header > div:last-child > div[style*="width:1px"] { display: none; }
+    /* 장 상태 pill 축소 */
+    #wsStatus { font-size: 10px !important; max-width: 100px; overflow: hidden;
+      white-space: nowrap; text-overflow: ellipsis; padding: 4px 8px !important; }
+    /* 날짜 숨김 */
     #hDate { display: none; }
+    /* 사용자 이름 크기 조정 */
+    .logo-user-name { font-size: 15px !important; font-weight: 900; }
 
     /* ── 모바일 main ── */
     .main {
       padding: 0 !important;
       max-width: 100% !important;
-      /* GNB 높이 + safe-area 만큼 하단 공간 확보 */
-      padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+      /* 플로팅 GNB: 높이(66) + 위 여백(14) + safe-area + 여유 */
+      padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     /* ── 모바일 페이지 탭 ── */
@@ -556,16 +585,17 @@
     /* 데스크탑용 디바이더 숨기기 */
     .mob-page > .divider { margin: 20px 0 !important; }
 
-    /* ── 바텀 GNB ── */
+    /* ── 바텀 GNB — 플로팅 스타일 ── */
     .mob-gnb {
       display: flex;
       position: fixed;
-      bottom: 0; left: 0; right: 0;
+      bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+      left: 12px; right: 12px;
       background: var(--surface);
-      border-top: 1px solid var(--border);
+      border: 1px solid var(--border);
+      border-radius: 24px;
       z-index: 150;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-      box-shadow: 0 -4px 20px rgba(0,0,0,.35);
+      box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.2);
     }
 
     .gnb-btn {
@@ -573,28 +603,38 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-end;
-      padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
+      justify-content: center;
+      padding: 12px 4px 10px;
       background: transparent;
       border: none;
       color: var(--muted);
       cursor: pointer;
       font-family: inherit;
       position: relative;
-      transition: color .15s;
+      transition: color .18s, background .18s;
       -webkit-tap-highlight-color: transparent;
-      min-height: 58px;
+      min-height: 66px;
+      gap: 4px;
     }
+    .gnb-btn:active { background: rgba(88,166,255,.07); }
     .gnb-btn.gnb-active { color: var(--blue); }
+    /* 활성 탭 배경 하이라이트 */
+    .gnb-btn.gnb-active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 2.5px;
+      background: var(--blue);
+      border-radius: 0 0 3px 3px;
+    }
 
     .gnb-svg {
-      width: 22px; height: 22px;
-      margin-bottom: 3px;
+      width: 25px; height: 25px;
       flex-shrink: 0;
       stroke: currentColor;
     }
     .gnb-label {
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 600;
       letter-spacing: .2px;
       line-height: 1;
@@ -620,37 +660,25 @@
     }
     .gnb-badge.show { display: block; }
 
-    /* 중앙 ➕ 버튼 (특별 스타일) */
+    /* 중앙 ➕ 버튼 (FAB 스타일) */
+    .gnb-center { justify-content: flex-start; padding-top: 0; }
     .gnb-center .gnb-fab {
-      width: 50px; height: 50px;
+      width: 52px; height: 52px;
       background: var(--blue);
       border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 24px;
-      margin-bottom: 3px;
-      margin-top: -18px;
-      box-shadow: 0 4px 16px rgba(88,166,255,.45);
+      margin-top: -14px;
+      box-shadow: 0 4px 18px rgba(88,166,255,.5);
       transition: transform .15s, box-shadow .15s;
+      flex-shrink: 0;
     }
-    .gnb-center.gnb-active .gnb-fab,
-    .gnb-center .gnb-fab:active {
-      transform: scale(.94);
+    .gnb-center:active .gnb-fab {
+      transform: scale(.93);
       box-shadow: 0 2px 8px rgba(88,166,255,.3);
     }
-    /* ── 테마 토글 버튼 ── */
-    .theme-btn{
-      background:var(--surface2);border:1px solid var(--border);
-      color:var(--text);border-radius:8px;
-      padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;
-      font-family:inherit;display:flex;align-items:center;gap:5px;
-      transition:all .15s;white-space:nowrap;
-    }
-    .theme-btn:hover{border-color:var(--blue);color:var(--blue);}
-    /* 모바일에서 테마 버튼 압축 */
-    @media(max-width:768px){
-      .theme-btn .theme-btn-txt{display:none;}
-      .theme-btn{padding:6px 8px;border-radius:8px;}
-    }
+    .gnb-center.gnb-active::before { display: none; } /* 중앙 버튼은 상단 바 없음 */
+    /* theme-btn은 hdr-icon-btn으로 통합 (레거시 호환) */
+    .theme-btn{ display:none; }
 
     /* ── 모바일 히스토리 카드 ── */
     .mob-h-cards{display:none;flex-direction:column;gap:10px;}
@@ -821,7 +849,7 @@
 
 <header>
   <div>
-    <div class="logo">📈 Trading Desk <span>Private</span></div>
+    <div class="logo">📈 Trading Desk <span class="logo-sub">Private</span></div>
     <div class="mh">
       🌅 <b>프리장</b> 04:00–09:30 ET &nbsp;|&nbsp;
       🟢 <b>정규장</b> 09:30–16:00 ET &nbsp;|&nbsp;
@@ -830,16 +858,33 @@
       <span class="std">❄️ 겨울시간(11월 첫째 일~3월 둘째 일): 프리 18:00–23:30 · 정규 23:30–06:00(+1) · 애프터 06:00–10:00 KST</span>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px">
-    <a href="pattern.html" style="background:rgba(188,140,255,.18);border:1px solid rgba(188,140,255,.55);color:var(--purple);border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;">🧠 패턴 분석</a>
-    <a href="chart-lab.html" style="background:rgba(88,166,255,.18);border:1px solid rgba(88,166,255,.55);color:var(--blue);border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;">🔬 차트 연구실</a>
-    <span id="wsStatus" style="font-size:11px;font-weight:700;color:var(--muted)">⚫ 연결 중...</span>
-    <button onclick="refreshPrices()" id="refreshBtn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px;">🔄 가격 갱신</button>
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
-      <svg id="themeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-      <span class="theme-btn-txt" id="themeTxt">라이트</span>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <!-- 페이지 이동 링크 -->
+    <a href="pattern.html" class="hdr-btn hdr-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="12" r="10"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2.5"/></svg>
+      <span>패턴 분석</span>
+    </a>
+    <a href="chart-lab.html" class="hdr-btn hdr-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>차트 연구실</span>
+    </a>
+    <!-- 구분선 -->
+    <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
+    <!-- 장 상태 -->
+    <span id="wsStatus" class="hdr-status">
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;flex-shrink:0"></span>
+      연결 중...
+    </span>
+    <!-- 가격 갱신 -->
+    <button onclick="refreshPrices()" id="refreshBtn" class="hdr-icon-btn" title="가격 갱신">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
     </button>
-    <span style="color:var(--muted);font-size:12px" id="hDate"></span>
+    <!-- 테마 토글 -->
+    <button class="hdr-icon-btn" id="themeBtn" onclick="toggleTheme()" title="테마 변경">
+      <svg id="themeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+    <!-- 날짜 -->
+    <span style="color:var(--muted);font-size:11px;font-weight:500" id="hDate"></span>
   </div>
 </header>
 
@@ -1388,18 +1433,23 @@
 
   function updateWsStatus(state){
     const el=document.getElementById('wsStatus'); if(!el)return;
+    // dot + text 구조로 업데이트
+    const set=(dot,txt,c)=>{
+      el.innerHTML=`<span style="width:7px;height:7px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0"></span>${txt}`;
+      el.style.color=c;
+    };
     if(state==='REGULAR_CONNECTING'){
-      el.textContent='🔗 Finnhub 연결 중...'; el.style.color='var(--muted)';
+      set('var(--muted)','연결 중...','var(--muted)');
     } else if(state==='REGULAR'){
-      el.textContent='🟢 Finnhub 실시간'; el.style.color='var(--green)';
+      set('var(--green)','실시간','var(--green)');
     } else if(state==='REGULAR_ERR'){
-      el.textContent='🔴 WS 오류 · REST 사용'; el.style.color='var(--red)';
+      set('var(--red)','REST 모드','var(--red)');
     } else if(state==='PRE'){
-      el.textContent='🌅 Yahoo 프리장'; el.style.color='#d29922';
+      set('#d29922','프리장','#d29922');
     } else if(state==='POST'){
-      el.textContent='🌙 Yahoo 애프터장'; el.style.color='#bc8cff';
+      set('#bc8cff','애프터장','#bc8cff');
     } else {
-      el.textContent='⏸ 장마감'; el.style.color='#8b949e';
+      set('#555e6e','장마감','var(--muted)');
     }
   }
 
@@ -2436,11 +2486,13 @@
   // ── 헤더 유저 배지 ──
   if(TD_ACTIVE){
     const c=TD_COLORS[TD_ACTIVE]||'#4f9eff';
-    // 이름 + 사용자 전환 버튼을 로고 바로 옆에 함께 배치
     document.querySelector('.logo').insertAdjacentHTML('beforeend',
-      `&nbsp;<span style="display:inline-flex;align-items:center;gap:8px;border-left:3px solid ${c};padding-left:12px;margin-left:8px;">` +
-      `<span style="font-size:20px;font-weight:900;color:${c};text-shadow:0 0 14px ${c}88;">${TD_ACTIVE}</span>` +
-      `<button onclick="switchUser()" style="background:${c}22;border:1px solid ${c}66;color:${c};border-radius:7px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.2px;transition:all .15s;" onmouseover="this.style.background='${c}44'" onmouseout="this.style.background='${c}22'">👤 사용자 전환 및 실시간 순위표</button>` +
+      `<span class="logo-user" style="border-left-color:${c}">` +
+      `<span class="logo-user-name" style="color:${c};text-shadow:0 0 12px ${c}55">${TD_ACTIVE}</span>` +
+      `<button class="hdr-btn" onclick="switchUser()" style="border-color:${c}44;color:${c};background:${c}14;">` +
+        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>` +
+        `<span class="hdr-user-txt">사용자 전환</span>` +
+      `</button>` +
       `</span>`
     );
   }
