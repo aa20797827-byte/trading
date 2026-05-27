@@ -680,7 +680,7 @@
 <script>
   // ── API 키 ──
   const FINNHUB_KEY  = 'd8ao1f1r01qpujl2rongd8ao1f1r01qpujl2roo0'; // 본장 WS
-  const TWELVE_KEY   = 'demo';                                       // 프리/애프터 (CORS 완전 허용)
+  const TWELVE_KEY   = 'e0471be1fb43494f877f79812a548d6a';           // 프리/애프터 (CORS 완전 허용)
   const POLYGON_KEY  = '_p_KVueWguRFeJSLwWOYiTLY0c636Evs';         // 전일 최후 fallback
 
   // ── Firebase 초기화 ──
@@ -1089,15 +1089,16 @@
           if(!dayHigh   && tdHigh>0) dayHigh=tdHigh;
           if(!dayLow    && tdLow>0)  dayLow=tdLow;
 
-          // 본장: Finnhub 성공 시 덮어쓰지 않음
+          // 본장: Finnhub 성공 시 덮어쓰지 않음 / 그 외 항상 사용
           if(!regular && tdClose>0){
             regular=tdClose; regularChg=tdChgPct; regularChgAbs=tdChgAbs;
           }
-          // 프리/애프터 가격
+          // 프리/애프터/장마감 — extended_price가 있으면 무조건 표시
           if(extPrice>0){
             if(state==='PRE'){
               pre=extPrice; preChg=extPct;
-            } else if(state==='POST'){
+            } else if(state==='POST' || state==='CLOSED'){
+              // 장마감 중에도 가장 최근 extended 가격 표시
               post=extPrice; postChg=extPct;
             }
           }
