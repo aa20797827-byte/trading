@@ -34,15 +34,39 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;transition:background .2s,color .2s;}
 
-    /* 헤더 */
-    header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px;}
-    .logo{font-size:17px;font-weight:700;color:var(--blue);}
-    .logo .logo-sub{color:var(--muted);font-weight:400;font-size:12px;margin-left:8px;}
+    /* ── 헤더 ── */
+    header{
+      background:var(--surface);
+      border-bottom:1px solid var(--border);
+      padding:14px 28px;
+      display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:100;gap:14px;
+    }
+    /* 로고 */
+    .logo{
+      font-size:20px;font-weight:800;color:var(--blue);
+      letter-spacing:-.4px;display:flex;align-items:center;flex-wrap:wrap;gap:0;
+    }
+    .logo .logo-sub{
+      color:var(--muted);font-weight:400;font-size:13px;
+      margin-left:9px;letter-spacing:0;
+    }
     /* 헤더 사용자 배지 */
-    .logo-user{display:inline-flex;align-items:center;gap:8px;border-left:3px solid;padding-left:12px;margin-left:10px;vertical-align:middle;}
-    .logo-user-name{font-size:18px;font-weight:900;}
+    .logo-user{
+      display:inline-flex;align-items:center;gap:9px;
+      border-left:3px solid;padding-left:13px;margin-left:12px;
+    }
+    .logo-user-name{font-size:19px;font-weight:900;letter-spacing:-.3px;}
     /* 헤더 버튼 공통 */
-    .hdr-btn{display:inline-flex;align-items:center;gap:6px;border-radius:10px;border:1px solid var(--border);padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;font-family:inherit;background:var(--surface2);color:var(--text);transition:all .15s;white-space:nowrap;}
+    .hdr-btn{
+      display:inline-flex;align-items:center;gap:7px;
+      border-radius:11px;border:1px solid var(--border);
+      padding:9px 16px;
+      font-size:13px;font-weight:600;letter-spacing:-.1px;
+      cursor:pointer;text-decoration:none;font-family:inherit;
+      background:var(--surface2);color:var(--text);
+      transition:all .15s;white-space:nowrap;line-height:1;
+    }
     .hdr-btn:hover{border-color:var(--blue);color:var(--blue);}
     .hdr-btn svg{flex-shrink:0;}
     /* 색상 변형 */
@@ -51,12 +75,24 @@
     .hdr-blue{background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.3);color:var(--blue);}
     .hdr-blue:hover{background:rgba(88,166,255,.16);}
     /* 아이콘 전용 버튼 */
-    .hdr-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;padding:0;}
+    .hdr-icon-btn{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:38px;height:38px;border-radius:10px;
+      border:1px solid var(--border);background:var(--surface2);
+      color:var(--muted);cursor:pointer;font-family:inherit;
+      transition:all .15s;padding:0;
+    }
     .hdr-icon-btn:hover{border-color:var(--blue);color:var(--blue);}
     /* 상태 pill */
-    .hdr-status{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;}
-    /* 사용자 전환 버튼 내 텍스트 (모바일에서 숨김) */
-    .hdr-user-txt{white-space:nowrap;}
+    .hdr-status{
+      display:inline-flex;align-items:center;gap:6px;
+      background:var(--surface2);border:1px solid var(--border);
+      border-radius:20px;padding:7px 14px;
+      font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;
+      letter-spacing:-.1px;
+    }
+    /* 커뮤니티 버튼 텍스트 (소형에서 숨김) */
+    .hdr-comm-txt{white-space:nowrap;}
     .mh{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.6;}
     .mh b{color:var(--text);font-weight:600;}
     .mh .dst{color:#58a6ff;} .mh .std{color:#d29922;}
@@ -545,7 +581,7 @@
 
     /* ── 헤더 모바일 ── */
     header {
-      padding: 10px 14px !important;
+      padding: 11px 14px !important;
       position: sticky; top: 0; z-index: 100;
       gap: 8px;
     }
@@ -555,12 +591,16 @@
     /* 구분선 숨김 */
     header > div:last-child > div[style*="width:1px"] { display: none; }
     /* 장 상태 pill 축소 */
-    #wsStatus { font-size: 10px !important; max-width: 100px; overflow: hidden;
-      white-space: nowrap; text-overflow: ellipsis; padding: 4px 8px !important; }
+    #wsStatus { font-size: 11px !important; padding: 5px 10px !important; max-width: 96px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     /* 날짜 숨김 */
     #hDate { display: none; }
     /* 사용자 이름 크기 조정 */
-    .logo-user-name { font-size: 15px !important; font-weight: 900; }
+    .logo-user-name { font-size: 16px !important; font-weight: 900; }
+    /* 로고 폰트 조정 */
+    .logo { font-size: 17px !important; }
+    /* 커뮤니티 버튼 축소 — 이모지만 */
+    .hdr-comm-txt { display: none; }
+    .logo-user { gap: 7px !important; padding-left: 10px !important; margin-left: 8px !important; }
 
     /* ── 모바일 main ── */
     .main {
@@ -861,30 +901,30 @@
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
     <!-- 페이지 이동 링크 -->
     <a href="pattern.html" class="hdr-btn hdr-purple">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="12" r="10"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2.5"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="12" r="10"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2.5"/></svg>
       <span>패턴 분석</span>
     </a>
     <a href="chart-lab.html" class="hdr-btn hdr-blue">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span>차트 연구실</span>
     </a>
     <!-- 구분선 -->
-    <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
+    <div style="width:1px;height:22px;background:var(--border);flex-shrink:0;"></div>
     <!-- 장 상태 -->
     <span id="wsStatus" class="hdr-status">
-      <span style="width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;flex-shrink:0"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;flex-shrink:0"></span>
       연결 중...
     </span>
     <!-- 가격 갱신 -->
     <button onclick="refreshPrices()" id="refreshBtn" class="hdr-icon-btn" title="가격 갱신">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
     </button>
     <!-- 테마 토글 -->
     <button class="hdr-icon-btn" id="themeBtn" onclick="toggleTheme()" title="테마 변경">
-      <svg id="themeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      <svg id="themeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
     </button>
     <!-- 날짜 -->
-    <span style="color:var(--muted);font-size:11px;font-weight:500" id="hDate"></span>
+    <span style="color:var(--muted);font-size:12px;font-weight:500" id="hDate"></span>
   </div>
 </header>
 
@@ -2488,10 +2528,9 @@
     const c=TD_COLORS[TD_ACTIVE]||'#4f9eff';
     document.querySelector('.logo').insertAdjacentHTML('beforeend',
       `<span class="logo-user" style="border-left-color:${c}">` +
-      `<span class="logo-user-name" style="color:${c};text-shadow:0 0 12px ${c}55">${TD_ACTIVE}</span>` +
-      `<button class="hdr-btn" onclick="switchUser()" style="border-color:${c}44;color:${c};background:${c}14;">` +
-        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>` +
-        `<span class="hdr-user-txt">사용자 전환</span>` +
+      `<span class="logo-user-name" style="color:${c};text-shadow:0 0 14px ${c}44">${TD_ACTIVE}</span>` +
+      `<button class="hdr-btn" onclick="switchUser()" style="border-color:${c}44;color:${c};background:${c}12;font-size:13px;">` +
+        `🏆 <span class="hdr-comm-txt">커뮤니티</span>` +
       `</button>` +
       `</span>`
     );
